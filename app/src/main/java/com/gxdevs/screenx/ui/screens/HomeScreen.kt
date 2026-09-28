@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import com.gxdevs.screenx.ui.theme.EmeraldAccent
+import com.gxdevs.screenx.ui.components.MainRecordShaderCard
 import android.util.Size
 import android.widget.Toast
 import androidx.compose.animation.core.Spring
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -614,105 +616,14 @@ fun HomeScreen(
                         .height(236.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Standard MediaProjection Record Card (Inverted Theme: Dark in light theme, Light in dark theme)
-                    val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-                    val recordCardBg = if (isRecordingActive) {
-                        MaterialTheme.colorScheme.error
-                    } else if (isDarkTheme) {
-                        Color(0xFFF3F4F6) // Light in dark theme
-                    } else {
-                        Color(0xFF14161B) // Dark in light theme
-                    }
-
-                    val recordCardContent = if (isRecordingActive) {
-                        MaterialTheme.colorScheme.onError
-                    } else if (isDarkTheme) {
-                        Color(0xFF111827) // Dark text & icon in dark theme
-                    } else {
-                        Color(0xFFF9FAFB) // Light text & icon in light theme
-                    }
-
-                    val recordCardSubContent = if (isRecordingActive) {
-                        MaterialTheme.colorScheme.onError.copy(alpha = 0.8f)
-                    } else if (isDarkTheme) {
-                        Color(0xFF4B5563) // Refined dark-gray subtitle in dark theme
-                    } else {
-                        Color(0xFF9CA3AF) // Refined light-gray subtitle in light theme
-                    }
-
-                    val recordBadgeBg = if (isRecordingActive) {
-                        MaterialTheme.colorScheme.onError.copy(alpha = 0.2f)
-                    } else if (isDarkTheme) {
-                        Color(0xFFE5E7EB)
-                    } else {
-                        Color(0xFF232730)
-                    }
-
-                    val recordBadgeBorder = if (isRecordingActive) {
-                        MaterialTheme.colorScheme.onError.copy(alpha = 0.5f)
-                    } else if (isDarkTheme) {
-                        Color(0xFFD1D5DB)
-                    } else {
-                        Color(0xFF374151)
-                    }
-
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = recordCardBg
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            if (isRecordingActive) MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                            else if (isDarkTheme) Color(0xFFE5E7EB).copy(alpha = 0.8f)
-                            else Color(0xFF262A33)
-                        ),
+                    // Permanent Dynamic AGSL Shader Gradient with Interactive Chromatic Shockwave Ripple
+                    MainRecordShaderCard(
+                        isRecordingActive = isRecordingActive,
+                        onClick = onStartRecordingClick,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .bouncyClickable { onStartRecordingClick() }
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            // Record target icon at the top
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(recordBadgeBg)
-                                    .border(1.dp, recordBadgeBorder, CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Lucide.CircleDot,
-                                    contentDescription = null,
-                                    tint = recordCardContent,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = if (isRecordingActive) "Recording" else "Record",
-                                    color = recordCardContent,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    lineHeight = 24.sp
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = if (isRecordingActive) "Tap to stop" else "Tap to start",
-                                    color = recordCardSubContent,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    lineHeight = 15.sp
-                                )
-                            }
-                        }
-                    }
+                    )
 
                     // Right Column (Storage + Audio Source)
                     Column(
@@ -723,11 +634,10 @@ fun HomeScreen(
                     ) {
                         // Storage Card
                         Card(
-                            shape = RoundedCornerShape(20.dp),
+                            shape = RoundedCornerShape(24.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
                             ),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
@@ -742,18 +652,13 @@ fun HomeScreen(
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier
-                                        .size(34.dp)
+                                        .size(36.dp)
                                         .clip(CircleShape)
                                         .background(
                                             if (freeSpaceGB < 2) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                                             else MaterialTheme.colorScheme.surfaceVariant
                                         )
-                                        .border(
-                                            1.dp,
-                                            if (freeSpaceGB < 2) MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
-                                            else MaterialTheme.colorScheme.outlineVariant,
-                                            CircleShape
-                                        )
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                                 ) {
                                     Icon(
                                         imageVector = Lucide.HardDrive,
@@ -786,11 +691,10 @@ fun HomeScreen(
 
                         // Audio Source Card
                         Card(
-                            shape = RoundedCornerShape(20.dp),
+                            shape = RoundedCornerShape(24.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface
                             ),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
@@ -805,10 +709,10 @@ fun HomeScreen(
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier
-                                        .size(34.dp)
+                                        .size(36.dp)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                                 ) {
                                     Icon(
                                         imageVector = when (audioSource) {
@@ -859,11 +763,10 @@ fun HomeScreen(
                 ) {
                     // Resolution Card
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -886,10 +789,10 @@ fun HomeScreen(
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(36.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                             ) {
                                 Icon(
                                     imageVector = Lucide.Video,
@@ -922,11 +825,10 @@ fun HomeScreen(
 
                     // Orientation Card
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -948,10 +850,10 @@ fun HomeScreen(
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(36.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                             ) {
                                 Icon(
                                     imageVector = when (orientation) {
@@ -996,17 +898,14 @@ fun HomeScreen(
                     }
                     val isAdbRecording = isAdbRecordingActual || isAdbStarting
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        border = BorderStroke(
-                            1.dp,
-                            if (isAdbRecording)
-                                MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
-                            else
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        ),
+                        border = if (isAdbRecording)
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
+                        else
+                            null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(78.dp)
@@ -1035,7 +934,7 @@ fun HomeScreen(
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (isAdbRecording)
@@ -1043,12 +942,7 @@ fun HomeScreen(
                                         else
                                             MaterialTheme.colorScheme.surfaceVariant
                                     )
-                                    .border(
-                                        1.dp,
-                                        if (isAdbRecording) MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
-                                        else MaterialTheme.colorScheme.outlineVariant,
-                                        CircleShape
-                                    )
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                             ) {
                                 Icon(
                                     imageVector = Lucide.Zap,
@@ -1137,54 +1031,35 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             // Gallery / Recent Recordings Section
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            // Gallery Section (only shown if there are recorded videos)
+            if (videos.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
                 ) {
-                    Text(
-                        text = "Gallery",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "View All",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable {
-                            onViewAllClick()
-                        }
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                if (videos.isEmpty()) {
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(78.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Recorded videos will appear here",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = "Gallery",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "View All",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable {
+                                onViewAllClick()
+                            }
+                        )
                     }
-                } else {
+                    Spacer(modifier = Modifier.height(10.dp))
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         contentPadding = PaddingValues(end = 10.dp),
@@ -1199,9 +1074,9 @@ fun HomeScreen(
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(18.dp))
+            }
 
             // Quick Tools Section
             Column(
@@ -1223,7 +1098,6 @@ fun HomeScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(78.dp)
@@ -1517,15 +1391,28 @@ fun RecentVideoCard(
     }
 }
 
+enum class StackPosition {
+    Single, Top, Middle, Bottom
+}
+
+fun getStackedShape(position: StackPosition): RoundedCornerShape {
+    return when (position) {
+        StackPosition.Single -> RoundedCornerShape(26.dp)
+        StackPosition.Top -> RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp, bottomStart = 6.dp, bottomEnd = 6.dp)
+        StackPosition.Middle -> RoundedCornerShape(6.dp)
+        StackPosition.Bottom -> RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 26.dp, bottomEnd = 26.dp)
+    }
+}
+
 @Composable
 fun OrionSectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        letterSpacing = 1.sp,
+        letterSpacing = 1.2.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(start = 4.dp, top = 10.dp, bottom = 2.dp)
+        modifier = modifier.padding(start = 6.dp, top = 16.dp, bottom = 6.dp)
     )
 }
 
@@ -1534,23 +1421,16 @@ fun OrionStackedGroupCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
+    Column(
         modifier = modifier.fillMaxWidth(),
-        content = {
-            Column(content = content)
-        }
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+        content = content
     )
 }
 
 @Composable
 fun OrionSettingsDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 66.dp, end = 16.dp),
-        thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-    )
+    // No divider line needed as cards are individually stacked with a sleek 3dp gap
 }
 
 @Composable
@@ -1561,70 +1441,77 @@ fun OrionSettingsSwitchItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    position: StackPosition = StackPosition.Middle,
     iconTint: Color = MaterialTheme.colorScheme.onSurface,
     iconBackground: Color = MaterialTheme.colorScheme.surfaceVariant
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        shape = getStackedShape(position),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier.fillMaxWidth()
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(iconBackground)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .clickable { onCheckedChange(!checked) }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                softWrap = true,
-                lineHeight = 20.sp
-            )
-            if (!subtitle.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 15.sp,
-                    softWrap = true
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(iconBackground)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f), RoundedCornerShape(13.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    softWrap = true,
+                    lineHeight = 20.sp
+                )
+                if (!subtitle.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 16.sp,
+                        softWrap = true
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             )
-        )
+        }
     }
 }
 
@@ -1636,78 +1523,92 @@ fun OrionSettingsValueItem(
     subtitle: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    position: StackPosition = StackPosition.Middle,
     iconTint: Color = MaterialTheme.colorScheme.onSurface,
     iconBackground: Color = MaterialTheme.colorScheme.surfaceVariant,
     showChevron: Boolean = true
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        shape = getStackedShape(position),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier.fillMaxWidth()
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(iconBackground)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                softWrap = true,
-                lineHeight = 20.sp
-            )
-            if (!subtitle.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 16.sp,
-                    softWrap = true
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(iconBackground)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f), RoundedCornerShape(13.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = value,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
-            )
-            if (showChevron) {
-                Icon(
-                    imageVector = Lucide.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outlineVariant,
-                    modifier = Modifier.size(16.dp)
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    softWrap = true,
+                    lineHeight = 20.sp
                 )
+                if (!subtitle.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 16.sp,
+                        softWrap = true
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.padding(vertical = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = value,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (showChevron) {
+                        Icon(
+                            imageVector = Lucide.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -1721,75 +1622,89 @@ fun OrionSettingsInfoItem(
     badge: String? = null,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    position: StackPosition = StackPosition.Middle,
     iconTint: Color = MaterialTheme.colorScheme.onSurface,
     iconBackground: Color = MaterialTheme.colorScheme.surfaceVariant
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        shape = getStackedShape(position),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = modifier.fillMaxWidth()
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(iconBackground)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(18.dp)
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(iconBackground)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f), RoundedCornerShape(13.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                softWrap = true,
-                lineHeight = 20.sp
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 16.sp,
-                softWrap = true
-            )
-        }
-
-        if (badge != null) {
-            Spacer(modifier = Modifier.width(12.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = badge,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    softWrap = true,
+                    lineHeight = 20.sp
                 )
-                if (onClick != null) {
-                    Icon(
-                        imageVector = Lucide.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.size(16.dp)
-                    )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 16.sp,
+                    softWrap = true
+                )
+            }
+
+            if (badge != null) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = badge,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (onClick != null) {
+                            Icon(
+                                imageVector = Lucide.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -2019,6 +1934,7 @@ fun RecentThumbnailItem(
 
 // ─── ADB Pairing Setup Dialog ────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdbPairingDialog(
     settingsManager: SettingsManager,
@@ -2044,6 +1960,8 @@ fun AdbPairingDialog(
     var isWorking by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf("") }
     var successMsg by remember { mutableStateOf(if (isPaired && AdbManager.isConnected) "Connected and ready!" else "") }
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     fun launchServiceAndSettings() {
         try {
@@ -2073,60 +1991,103 @@ fun AdbPairingDialog(
         }
     }
 
-    Dialog(
+    ModalBottomSheet(
         onDismissRequest = { if (!isWorking) onDismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            modifier = Modifier.fillMaxWidth(0.94f)
-        ) {
-            Column(
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            Box(
                 modifier = Modifier
-                    .padding(22.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Header
+                    .padding(top = 12.dp, bottom = 8.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 22.dp)
+                .padding(bottom = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+                // Header Row with Title, Status & Close Button
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                if (AdbManager.isConnected)
-                                    EmeraldAccent.copy(alpha = 0.18f)
-                                else
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    if (AdbManager.isConnected)
+                                        EmeraldAccent.copy(alpha = 0.18f)
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                )
+                        ) {
+                            Icon(
+                                imageVector = if (AdbManager.isConnected) Lucide.Shield else Lucide.Usb,
+                                contentDescription = null,
+                                tint = if (AdbManager.isConnected) EmeraldAccent else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(22.dp)
                             )
+                        }
+                        Column {
+                            Text(
+                                "Stealth Recording Setup",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = (-0.3).sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (AdbManager.isConnected) EmeraldAccent
+                                            else if (isPaired) Color(0xFFFFA000)
+                                            else MaterialTheme.colorScheme.outline
+                                        )
+                                )
+                                Text(
+                                    if (AdbManager.isConnected) "Status: Connected & Ready"
+                                    else if (isPaired) "Status: Paired (Needs Connect)"
+                                    else "One-time wireless pairing",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (AdbManager.isConnected) EmeraldAccent else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                    IconButton(
+                        onClick = { if (!isWorking) onDismiss() },
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            imageVector = if (AdbManager.isConnected) Lucide.Shield else Lucide.Usb,
-                            contentDescription = null,
-                            tint = if (AdbManager.isConnected) EmeraldAccent else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Stealth Recording Setup",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = (-0.4).sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            if (AdbManager.isConnected) "Status: Connected & Ready"
-                            else if (isPaired) "Status: Paired (Needs Connect)"
-                            else "One-time wireless pairing",
-                            fontSize = 12.sp,
-                            color = if (AdbManager.isConnected) EmeraldAccent else MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Lucide.X,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -2135,43 +2096,27 @@ fun AdbPairingDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(3.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selectedTab == 0) MaterialTheme.colorScheme.surface else Color.Transparent,
-                        tonalElevation = if (selectedTab == 0) 3.dp else 0.dp,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedTab = 0 }
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
+                    listOf("Quick Notification" to 0, "Manual / Port Entry" to 1).forEach { (label, index) ->
+                        val isSelected = selectedTab == index
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(11.dp))
+                                .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
+                                .clickable { selectedTab = index }
+                                .padding(vertical = 9.dp)
+                        ) {
                             Text(
-                                "Quick Notification",
+                                label,
                                 fontSize = 12.sp,
-                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selectedTab == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selectedTab == 1) MaterialTheme.colorScheme.surface else Color.Transparent,
-                        tonalElevation = if (selectedTab == 1) 3.dp else 0.dp,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedTab = 1 }
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(vertical = 8.dp)) {
-                            Text(
-                                "Manual / Port Entry",
-                                fontSize = 12.sp,
-                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selectedTab == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -2179,25 +2124,28 @@ fun AdbPairingDialog(
 
                 // Tab 0: Quick Notification Pairing
                 if (selectedTab == 0) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             "Pair easily using Android's notification reply:",
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         AdbSetupStep(
                             number = "1",
-                            text = "Tap 'Start Pairing Helper' below. ScreenX opens Developer Options."
+                            title = "Launch Wireless Debugging",
+                            text = "Tap 'Start Pairing Helper' below. ScreenX opens Android Developer Options."
                         )
                         AdbSetupStep(
                             number = "2",
-                            text = "Enable Wireless Debugging, then tap 'Pair device with pairing code'."
+                            title = "Tap 'Pair device with pairing code'",
+                            text = "Turn on Wireless Debugging and tap to reveal the 6-digit code."
                         )
                         AdbSetupStep(
                             number = "3",
-                            text = "Pull down your notification bar, tap Reply on ScreenX's notification, type the 6-digit code, and tap Send."
+                            title = "Reply on ScreenX Notification",
+                            text = "Pull down your notification shade, tap Reply, type the 6-digit code, and send."
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -2214,17 +2162,23 @@ fun AdbPairingDialog(
                                 }
                             },
                             shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) {
                             Icon(Lucide.Zap, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Start Pairing Helper", fontWeight = FontWeight.Bold)
+                            Text("Start Pairing Helper", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
 
                         if (serviceStarted) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
@@ -2473,46 +2427,51 @@ fun AdbPairingDialog(
                     }
                 }
 
-                // Bottom Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(
-                        onClick = { if (!isWorking) onDismiss() }
-                    ) {
-                        Text(if (AdbManager.isConnected) "Done" else "Close")
-                    }
-                }
             }
         }
     }
-}
 
 @Composable
-private fun AdbSetupStep(number: String, text: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top,
+private fun AdbSetupStep(number: String, title: String, text: String) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
-            Text(number, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+            ) {
+                Text(
+                    text = number,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = text,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 15.sp
+                )
+            }
         }
-        Text(
-            text = text,
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 18.sp,
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 
