@@ -231,12 +231,12 @@ fun SettingsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 1. STORAGE & SAFETY
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     OrionSectionHeader("STORAGE & SAFETY")
                     OrionStackedGroupCard {
                         OrionSettingsSwitchItem(
@@ -244,30 +244,31 @@ fun SettingsScreen(
                             title = "Safe Storage Auto-Stop",
                             subtitle = "Stops capture automatically before storage runs out",
                             checked = safeStorageStop,
+                            position = StackPosition.Top,
                             onCheckedChange = { coroutineScope.launch { settingsManager.setSafeStorageStop(it) } }
                         )
-                        OrionSettingsDivider()
                         OrionSettingsValueItem(
                             icon = Lucide.HardDrive,
                             title = "Safe Stop Buffer",
                             subtitle = "Storage buffer to ensure clean file finalization",
                             value = "$safeStorageThresholdMb MB",
+                            position = StackPosition.Middle,
                             onClick = { showStorageThresholdDialog = true }
                         )
-                        OrionSettingsDivider()
                         OrionSettingsInfoItem(
                             icon = Lucide.HardDrive,
                             title = "Internal Storage",
                             subtitle = "$freeSpaceGB GB free • ${if (safeStorageStop) "Safe stop active" else "Safe stop off"}",
-                            badge = "$usedPercent% Used"
+                            badge = "$usedPercent% Used",
+                            position = StackPosition.Middle
                         )
-                        OrionSettingsDivider()
                         OrionSettingsValueItem(
                             icon = Lucide.Film,
                             title = "Save Location",
                             subtitle = "Shared system Movies/ScreenX directory",
                             value = "Movies",
                             showChevron = false,
+                            position = StackPosition.Bottom,
                             onClick = {
                                 Toast.makeText(context, "Location locked to standard Movies/ScreenX", Toast.LENGTH_SHORT).show()
                             }
@@ -278,7 +279,7 @@ fun SettingsScreen(
 
             // 2. VIDEO CAPTURE
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     OrionSectionHeader("VIDEO CAPTURE")
                     OrionStackedGroupCard {
                         OrionSettingsValueItem(
@@ -286,25 +287,25 @@ fun SettingsScreen(
                             title = "Resolution",
                             subtitle = "Screen capture video resolution",
                             value = resolution,
+                            position = StackPosition.Top,
                             onClick = { showResDialog = true }
                         )
-                        OrionSettingsDivider()
                         OrionSettingsValueItem(
                             icon = Lucide.CirclePlay,
                             title = "Frame Rate",
                             subtitle = "Frames per second motion rate",
                             value = "$fps FPS",
+                            position = StackPosition.Middle,
                             onClick = { showFpsDialog = true }
                         )
-                        OrionSettingsDivider()
                         OrionSettingsValueItem(
                             icon = Lucide.Film,
                             title = "Video Bitrate",
                             subtitle = "Video encoding bitrate and quality",
                             value = "${bitrate / 1000000} Mbps",
+                            position = StackPosition.Middle,
                             onClick = { showBitrateDialog = true }
                         )
-                        OrionSettingsDivider()
                         OrionSettingsValueItem(
                             icon = when (orientation) {
                                 "Auto" -> Lucide.RotateCcw
@@ -314,6 +315,7 @@ fun SettingsScreen(
                             title = "Orientation",
                             subtitle = "Screen orientation lock or match",
                             value = orientation,
+                            position = StackPosition.Bottom,
                             onClick = {
                                 val nextOri = when (orientation) {
                                     "Auto" -> "Portrait"
@@ -329,7 +331,7 @@ fun SettingsScreen(
 
             // 3. AUDIO
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     OrionSectionHeader("AUDIO SOURCE")
                     OrionStackedGroupCard {
                         val audioSubtitle = if (isAdbRecordingDefault) {
@@ -368,6 +370,7 @@ fun SettingsScreen(
                             title = "Audio Input",
                             subtitle = audioSubtitle,
                             value = audioDisplay,
+                            position = StackPosition.Single,
                             showChevron = !isAdbRecordingDefault,
                             onClick = {
                                 if (isAdbRecordingDefault) {
@@ -387,7 +390,7 @@ fun SettingsScreen(
 
             // 4. RECORDING CONTROLS
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     OrionSectionHeader("RECORDING CONTROLS")
                     OrionStackedGroupCard {
                         OrionSettingsValueItem(
@@ -395,17 +398,17 @@ fun SettingsScreen(
                             title = "Start Countdown",
                             subtitle = "Delay timer before capture begins",
                             value = if (countdown == 0) "Off" else "${countdown}s",
+                            position = StackPosition.Top,
                             onClick = { showCountdownDialog = true }
                         )
-                        OrionSettingsDivider()
                         OrionSettingsSwitchItem(
                             icon = Lucide.Smartphone,
                             title = "Shake to Stop",
                             subtitle = "Shake phone firmly to end recording",
                             checked = shakeToStop,
+                            position = StackPosition.Middle,
                             onCheckedChange = { coroutineScope.launch { settingsManager.setShakeToStop(it) } }
                         )
-                        OrionSettingsDivider()
                         val floatingBallSummary = when {
                             !showFloating -> "Hidden"
                             floatingShowMode.startsWith("All the time") -> "Always Active"
@@ -416,6 +419,7 @@ fun SettingsScreen(
                             title = "Floating Controls",
                             subtitle = "On-screen quick controls overlay",
                             value = floatingBallSummary,
+                            position = StackPosition.Bottom,
                             onClick = { showFloatingShowModeDialog = true }
                         )
                     }
@@ -424,7 +428,7 @@ fun SettingsScreen(
 
             // 5. APPEARANCE & THEME
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     OrionSectionHeader("APPEARANCE & THEME")
                     OrionStackedGroupCard {
                         val themeSummary = when (themeMode) {
@@ -439,6 +443,7 @@ fun SettingsScreen(
                             title = "Theme Mode",
                             subtitle = "Dark, light, or system default",
                             value = themeSummary,
+                            position = StackPosition.Single,
                             onClick = { showThemeDialog = true }
                         )
                     }
@@ -447,7 +452,7 @@ fun SettingsScreen(
 
             // 6. ADB STEALTH RECORDING
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     OrionSectionHeader("STEALTH RECORDING")
                     OrionStackedGroupCard {
                         OrionSettingsSwitchItem(
@@ -455,6 +460,7 @@ fun SettingsScreen(
                             title = "Stealth Recording",
                             subtitle = "Undetectable background capture for protected apps",
                             checked = adbEnabled,
+                            position = if (adbEnabled) StackPosition.Top else StackPosition.Single,
                             onCheckedChange = { willEnable ->
                                 if (willEnable) {
                                     showAdbConfirmEnableDialog = true
@@ -467,7 +473,6 @@ fun SettingsScreen(
                         )
 
                         if (adbEnabled) {
-                            OrionSettingsDivider()
                             OrionSettingsValueItem(
                                 icon = Lucide.Usb,
                                 title = "Wireless ADB Pairing",
@@ -476,6 +481,7 @@ fun SettingsScreen(
                                 else
                                     "Pair device via wireless debugging",
                                 value = if (adbPaired) "Paired" else "Set Up",
+                                position = StackPosition.Middle,
                                 iconTint = if (adbPaired)
                                     EmeraldAccent
                                 else
@@ -484,7 +490,6 @@ fun SettingsScreen(
                                 onClick = { showAdbPairingDialog = true }
                             )
 
-                            OrionSettingsDivider()
                             val adbModeDisplay = when (adbCaptureMode) {
                                 "adb" -> "Stealth"
                                 "ask" -> "Prompt"
@@ -495,15 +500,16 @@ fun SettingsScreen(
                                 title = "Default Engine",
                                 subtitle = "Engine used by standard record button",
                                 value = adbModeDisplay,
+                                position = StackPosition.Middle,
                                 onClick = { showAdbModeDialog = true }
                             )
 
-                            OrionSettingsDivider()
                             OrionSettingsInfoItem(
                                 icon = Lucide.Info,
                                 title = "Stealth Details & Rules",
                                 subtitle = "Tap to view stealth limitations",
                                 badge = "Stealth",
+                                position = StackPosition.Bottom,
                                 onClick = { showAdbLimitationsDialog = true }
                             )
                         }
@@ -513,22 +519,23 @@ fun SettingsScreen(
 
             // 7. ABOUT SCREENX
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column {
                     OrionSectionHeader("ABOUT SCREENX")
                     OrionStackedGroupCard {
                         OrionSettingsInfoItem(
                             icon = Lucide.Settings,
                             title = "ScreenX Recorder",
                             subtitle = "Version 1.2.0 • Pro Screen Capture",
-                            badge = "v1.2.0"
+                            badge = "v1.2.0",
+                            position = StackPosition.Top
                         )
-                        OrionSettingsDivider()
                         val maxFps = DeviceCapabilitiesHelper.getMaxSupportedFps(context)
                         OrionSettingsInfoItem(
                             icon = Lucide.CirclePlay,
                             title = "Display Refresh Rate",
                             subtitle = "Panel supports up to $maxFps Hz",
-                            badge = "$maxFps Hz"
+                            badge = "$maxFps Hz",
+                            position = StackPosition.Bottom
                         )
                     }
                 }

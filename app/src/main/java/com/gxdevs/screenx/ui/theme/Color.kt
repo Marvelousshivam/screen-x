@@ -47,28 +47,28 @@ val OnErrorContainerLight = Color(0xFF6B1410)
 // ============================================================================
 val PrimaryDark = Color(0xFFFFFFFF)               // Pure White "Salt" (High-contrast hero pop)
 val OnPrimaryDark = Color(0xFF0C0D0F)             // Pitch Black "Pepper" on white
-val PrimaryContainerDark = Color(0xFF464D5C)      // Clearly visible elevated Slate Container for badges
+val PrimaryContainerDark = Color(0xFF2B2E38)      // Sleek Charcoal Slate Container
 val OnPrimaryContainerDark = Color(0xFFFFFFFF)
 
 val SecondaryDark = Color(0xFFD4D6D9)             // Light Silver Grey (Swatch 2)
 val OnSecondaryDark = Color(0xFF0C0D0F)
-val SecondaryContainerDark = Color(0xFF464D5C)    // Clearly visible Oval/Badge container
+val SecondaryContainerDark = Color(0xFF262831)    // Sleek subtle dark container for icons/badges
 val OnSecondaryContainerDark = Color(0xFFFFFFFF)
 
 val TertiaryDark = Color(0xFFA6ABB5)              // High-contrast Silver-Slate (Swatch 3)
 val OnTertiaryDark = Color(0xFF0C0D0F)
-val TertiaryContainerDark = Color(0xFF464D5C)     // Clearly visible Oval/Badge container
+val TertiaryContainerDark = Color(0xFF262831)     // Sleek subtle dark container
 val OnTertiaryContainerDark = Color(0xFFFFFFFF)
 
 val BackgroundDark = Color(0xFF0C0D0F)            // Pure Deep Pitch Black Obsidian
 val OnBackgroundDark = Color(0xFFFFFFFF)          // Pure Crisp White Text
-val SurfaceDark = Color(0xFF1E2025)               // Refined Elevated Charcoal Cards
+val SurfaceDark = Color(0xFF181A1F)               // Refined Elevated Charcoal Cards (#181A1F)
 val OnSurfaceDark = Color(0xFFFFFFFF)
-val SurfaceVariantDark = Color(0xFF464D5C)        // Distinct Elevated Badge/Chip container (Visibly distinct from card)
+val SurfaceVariantDark = Color(0xFF242730)        // Sleek dark container for icons, badges and pills
 val OnSurfaceVariantDark = Color(0xFFA6ABB5)      // High-Contrast Slate Grey subtitles (WCAG AAA)
 
-val OutlineDark = Color(0xFF707787)               // Slate outline
-val OutlineVariantDark = Color(0xFF626B7E)        // Crisp visible hairline card and badge border
+val OutlineDark = Color(0xFF383C47)               // Refined subtle dark outline
+val OutlineVariantDark = Color(0xFF2D3039)        // Subtle hairline border
 
 val ErrorDark = Color(0xFFFF5252)                 // High-contrast Coral Red (Live recording active)
 val OnErrorDark = Color(0xFF220504)
@@ -76,8 +76,10 @@ val ErrorContainerDark = Color(0xFF451412)
 val OnErrorContainerDark = Color(0xFFFFDAD6)
 
 // ============================================================================
-// SEMANTIC ACCENTS (Status Badges, Paired State, Audio Indicators)
+// SEMANTIC ACCENTS & ICON CONTAINERS
 // ============================================================================
+val IconContainerDark = Color(0xFF242730)         // Sleek dark squircle for icons in dark mode
+val IconContainerLight = Color(0xFFEFF1F6)        // Clean subtle squircle for icons in light mode
 val EmeraldAccent = Color(0xFF10B981)             // Modern vibrant emerald
 val EmeraldAccentDark = Color(0xFF34D399)         // Glowing mint emerald
 val EmeraldContainerLight = Color(0xFFD1FAE5)     // Soft mint tint
