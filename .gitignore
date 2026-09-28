@@ -33,6 +33,7 @@ Thumbs.db
 *.jks
 *.keystore
 secrets.properties
+key.properties
 
 # Kotlin
 .kotlin/
