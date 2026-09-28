@@ -60,6 +60,7 @@
 * 🤫 **Undetected by Apps:** Runs via a local Android Debug Bridge (ADB) daemon session. Because it operates outside the standard `MediaProjection` API surface, apps that actively monitor screen recording listeners (such as **Snapchat**) won't detect or trigger recording notifications.
 * ⚡ **1-Tap Notification Pairing:** Easily pair your device using Android 11+ Wireless Debugging—simply tap Reply on the ScreenX notification and submit your 6-digit code.
 * 🔍 **Zero-Config mDNS Discovery:** Automatically scans and detects wireless debugging ports on your local Wi-Fi.
+* 🔇 **Video-Only (No Audio/Voice):** Runs on Android's native `screenrecord` shell command, which only captures the display surface. It **does not record audio or voice** (internal or microphone audio is not captured in Stealth mode). Use standard recording mode if audio capture is required.
 * 🚫 **Limitations & `FLAG_SECURE`:** 
   > [!IMPORTANT]
   > Stealth Recording **cannot bypass Android's OS-level `FLAG_SECURE`**. Banking apps, DRM video players (e.g. Netflix, Prime Video), or protected views that explicitly set `WindowManager.LayoutParams.FLAG_SECURE` will be rendered as black screens by Android's hardware surface flinger.
