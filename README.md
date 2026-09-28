@@ -54,7 +54,17 @@
 
 ---
 
-## <a id="-features"></a>🚀 Core Features
+### 🕵️ Stealth Recording (Wireless ADB)
+> Completely rootless, background recording without system prompts or app-level detection.
+
+* 🤫 **Undetected by Apps:** Runs via a local Android Debug Bridge (ADB) daemon session. Because it operates outside the standard `MediaProjection` API surface, apps that actively monitor screen recording listeners (such as **Snapchat**) won't detect or trigger recording notifications.
+* ⚡ **1-Tap Notification Pairing:** Easily pair your device using Android 11+ Wireless Debugging—simply tap Reply on the ScreenX notification and submit your 6-digit code.
+* 🔍 **Zero-Config mDNS Discovery:** Automatically scans and detects wireless debugging ports on your local Wi-Fi.
+* 🚫 **Limitations & `FLAG_SECURE`:** 
+  > [!IMPORTANT]
+  > Stealth Recording **cannot bypass Android's OS-level `FLAG_SECURE`**. Banking apps, DRM video players (e.g. Netflix, Prime Video), or protected views that explicitly set `WindowManager.LayoutParams.FLAG_SECURE` will be rendered as black screens by Android's hardware surface flinger.
+
+---
 
 ### 🎥 High-Fidelity Recording
 > Configure video output exactly to your device and storage needs.
@@ -68,7 +78,8 @@
 ### 🎙️ Capture Options
 > Clean sound options for any recording context.
 
-* 🎤 **Audio Sources:** Record external microphone audio or internal system audio (Android 10+).
+* 🎧 **Synchronized Dual Audio:** Record internal system audio and external microphone audio simultaneously with synchronized sample interleaving.
+* 🎤 **Audio Sources:** Switch effortlessly between Microphone, System Audio (Android 10+), or Dual Audio.
 * 🎚️ **Custom Quality:** Configure sample rates and audio bitrates for crystal-clear sound.
 
 ---
@@ -104,11 +115,11 @@
 ScreenX is designed with modern Android development practices, ensuring scalability, performance, and clean code division:
 
 * **Language:** 100% Kotlin
-* **UI Framework:** Jetpack Compose with Material Design 3 (Material You dynamic theme support)
-* **Background Tasks:** Android Foreground Services (`ScreenRecordService`) with high-priority Notification channels
-* **Media Pipelines:** MediaProjection API, MediaRecorder, and custom AudioPlaybackCapture configurations
+* **UI Framework:** Jetpack Compose with Material Design 3 and AGSL (Android Graphics Shading Language) dynamic hardware-accelerated shaders
+* **Background Tasks:** Android Foreground Services (`ScreenRecordService`, `AdbRecordService`, `PairingInputService`)
+* **Media Pipelines:** MediaProjection API, Wireless ADB daemon capture, and synchronized dual `AudioRecord` / `AudioPlaybackCapture`
 * **State Management:** Kotlin Coroutines and Flows for reactive settings management
-* **Data Layer:** Jetpack DataStore / SharedPreferences for storing user configurations
+* **Data Layer:** Jetpack DataStore Preferences for storing user configurations
 
 ---
 
@@ -119,11 +130,15 @@ screen-x
 │
 ├── app/src/main/java/com/gxdevs/screenx/
 │   ├── data/
-│   │   └── SettingsManager.kt       # Manages recording and UI settings
+│   │   ├── AdbManager.kt            # TLS key-exchange, pairing, and ADB daemon commands
+│   │   ├── AdbMdns.kt               # Local mDNS discovery for Wireless Debugging ports
+│   │   └── SettingsManager.kt       # Manages recording, audio, and UI settings
 │   │
 │   ├── service/
-│   │   ├── ScreenRecordService.kt   # Core background recording service
-│   │   ├── AudioCaptureHelper.kt    # Logic for internal / microphone audio capture
+│   │   ├── ScreenRecordService.kt   # Standard MediaProjection recording service
+│   │   ├── AdbRecordService.kt      # Stealth recording service via local ADB socket
+│   │   ├── PairingInputService.kt   # Background notification reply receiver for pairing
+│   │   ├── AudioCaptureHelper.kt    # Synchronized dual internal & microphone audio capture
 │   │   ├── FloatingControlOverlay.kt # Draggable overlay control panel
 │   │   ├── BrushDrawingOverlay.kt   # Canvas overlay for drawing on screen
 │   │   ├── CountdownOverlay.kt      # Initial countdown overlay before recording
@@ -131,10 +146,13 @@ screen-x
 │   │   └── TileHelperActivity.kt    # Invisible activity helper for tile launches
 │   │
 │   ├── ui/
+│   │   ├── components/
+│   │   │   └── ShaderGradientCard.kt # AGSL brushed gunmetal metallic shader with touch ripple
 │   │   ├── screens/
-│   │   │   └── HomeScreen.kt        # Home UI with video list & settings controls
+│   │   │   ├── HomeScreen.kt        # Home UI with stealth/standard modes & video gallery
+│   │   │   └── SettingsScreen.kt    # Material You stacked settings & audio configurations
 │   │   └── theme/
-│   │       ├── Color.kt             # Material 3 theme colors
+│   │       ├── Color.kt             # Material 3 theme colors & dark container styling
 │   │       ├── Theme.kt             # Application theme initialization
 │   │       └── Type.kt              # Font and typography settings
 │   │
@@ -162,7 +180,7 @@ screen-x
 2. Open the project in Android Studio.
 3. Sync Gradle and build the project:
    ```bash
-   ./gradlew assembleDebug
+   ./gradlew assembleRelease
    ```
 4. Run the app on a connected physical device or emulator.
 
@@ -170,8 +188,10 @@ screen-x
 
 ## 🗺️ Upcoming Roadmap
 
-Here are some of the key features and enhancements planned for future releases of ScreenX:
-* **Simultaneous Audio Recording (Mic + System):** Add support to record both microphone (external) and device (internal) audio concurrently with real-time hardware-level synchronization and advanced gain mixing.
+* [x] **Simultaneous Audio Recording (Mic + System):** Concurrently records microphone and device audio with hardware-level synchronization.
+* [x] **Stealth Recording Mode:** Background rootless capture without app-level recording alerts.
+* [ ] **Cloud Backup & Instant Sharing:** Optional export and compression presets for messaging apps.
+
 
 ---
 
