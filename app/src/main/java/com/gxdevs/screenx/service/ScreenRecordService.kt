@@ -128,7 +128,6 @@ class ScreenRecordService : LifecycleService() {
     private var brushDrawingOverlay: BrushDrawingOverlay? = null
     private var countdownOverlay: CountdownOverlay? = null
     private var storageMonitorJob: Job? = null
-    private var originalMediaVolume: Int? = null
 
     private fun isHeadsetConnected(): Boolean {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
@@ -396,12 +395,23 @@ class ScreenRecordService : LifecycleService() {
     }
 
     private fun startRecordingSequence(resultCode: Int, resultData: Intent) {
+        if (isSaving) {
+            Log.w(TAG, "Previous recording is still saving. Waiting for save to finish before starting new recording...")
+            lifecycleScope.launch {
+                isSavingFlow.first { !it }
+                startRecordingSequence(resultCode, resultData)
+            }
+            return
+        }
+
         // Start Foreground immediately for Android 14 requirements
         val initialNotification = createNotification("Starting countdown...")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             var type = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                }
             }
             startForeground(NOTIFICATION_ID, initialNotification, type)
         } else {
@@ -458,7 +468,8 @@ class ScreenRecordService : LifecycleService() {
                     }
                 }
 
-                setupMediaRecorder(fps, bitrate, audioSource, orientationSetting)
+                val sessionTime = System.currentTimeMillis()
+                setupMediaRecorder(fps, bitrate, audioSource, orientationSetting, sessionTime)
 
                 // Get projection
                 mediaProjection = projectionManager.getMediaProjection(resultCode, resultData)
@@ -470,9 +481,9 @@ class ScreenRecordService : LifecycleService() {
                     }
                 }, Handler(Looper.getMainLooper()))
 
-                // Start audio capturing helper if it's System or MicSystem
-                if (audioSource == "System" || audioSource == "MicSystem") {
-                    tempAudioFile = File(cacheDir, "temp_audio.m4a")
+                // Start audio capturing helper for all active audio modes (Mic, System, MicSystem)
+                if (audioSource == "Mic" || audioSource == "System" || audioSource == "MicSystem") {
+                    tempAudioFile = File(cacheDir, "temp_audio_$sessionTime.m4a")
                     if (tempAudioFile?.exists() == true) {
                         tempAudioFile?.delete()
                     }
@@ -481,32 +492,9 @@ class ScreenRecordService : LifecycleService() {
                     val intVolPercent = settingsManager.internalAudioVolumeFlow.first()
                     val vocalClarity = settingsManager.vocalClarityFlow.first()
 
-                    val micGain = (micVolPercent.toFloat() / 100f).coerceIn(0.5f, 6.0f)
+                    // BUG-19 FIX: Allow full 0.1x - 6.0x range without coercing minimum to 0.5x
+                    val micGain = (micVolPercent.toFloat() / 100f).coerceIn(0.1f, 6.0f)
                     val intRatio = (intVolPercent.toFloat() / 100f).coerceIn(0.01f, 1.0f)
-
-                    // Anti-Speaker-Bleed Optimization for Loudspeaker recording:
-                    // When recording Mic + Internal Audio without headphones, high physical speaker volume
-                    // bleeds directly into the microphone. Lowering physical media volume to a comfortable ~35%
-                    // prevents the mic from being overloaded by the speaker.
-                    val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-                    val hasHeadset = isHeadsetConnected()
-                    if (audioSource == "MicSystem" && !hasHeadset && audioManager != null) {
-                        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-                        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                        val safeVol = (maxVol * 0.35f).toInt().coerceAtLeast(3)
-                        if (currentVol > safeVol) {
-                            originalMediaVolume = currentVol
-                            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, safeVol, 0)
-                            Log.d(TAG, "Loudspeaker dual recording: optimized speaker volume from $currentVol to $safeVol")
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(
-                                    this@ScreenRecordService,
-                                    "Speaker volume lowered to prevent mic bleed. (Use earphones for best clarity)",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
 
                     audioCaptureHelper = AudioCaptureHelper(
                         context = this@ScreenRecordService,
@@ -615,9 +603,9 @@ class ScreenRecordService : LifecycleService() {
         }
     }
 
-    private fun setupMediaRecorder(fps: Int, bitrate: Int, audioSource: String, orientationSetting: String) {
+    private fun setupMediaRecorder(fps: Int, bitrate: Int, audioSource: String, orientationSetting: String, sessionTime: Long) {
         // Create temp output file
-        tempVideoFile = File(cacheDir, "temp_recording.mp4")
+        tempVideoFile = File(cacheDir, "temp_video_$sessionTime.mp4")
         if (tempVideoFile?.exists() == true) {
             tempVideoFile?.delete()
         }
@@ -629,10 +617,8 @@ class ScreenRecordService : LifecycleService() {
         }
 
         mediaRecorder?.apply {
-            val hasAudio = audioSource == "Mic"
-            if (hasAudio) {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-            }
+            // Video stream is captured directly from VirtualDisplay surface.
+            // Audio is captured via AudioCaptureHelper (Mic, System, MicSystem) and remuxed seamlessly.
             setVideoSource(MediaRecorder.VideoSource.SURFACE)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             
@@ -647,12 +633,6 @@ class ScreenRecordService : LifecycleService() {
 
             // Setup Encoders
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-            if (hasAudio) {
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setAudioEncodingBitRate(128000)
-                setAudioSamplingRate(44100)
-            }
-
             setVideoEncodingBitRate(bitrate)
             setVideoFrameRate(fps)
 
@@ -744,6 +724,12 @@ class ScreenRecordService : LifecycleService() {
     }
 
     fun toggleMicMute(): Boolean {
+        if (audioCaptureHelper == null || audioCaptureHelper?.hasMic() != true) {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(this, "Microphone is not active in this recording mode", Toast.LENGTH_SHORT).show()
+            }
+            return isMicMuted
+        }
         val newMute = !isMicMuted
         isMicMuted = newMute
         audioCaptureHelper?.setMicMuted(newMute)
@@ -774,12 +760,6 @@ class ScreenRecordService : LifecycleService() {
         }
         accumulatedDurationMs = recordingDurationMs
 
-        // Release hardware projection surfaces immediately
-        virtualDisplay?.release()
-        virtualDisplay = null
-        mediaProjection?.stop()
-        mediaProjection = null
-
         // Immediately update floating controls on UI thread (do NOT dismiss if Always Show is on!)
         lifecycleScope.launch(Dispatchers.Main) {
             val showFloating = settingsManager.showFloatingFlow.first()
@@ -792,62 +772,75 @@ class ScreenRecordService : LifecycleService() {
             }
         }
 
-        // Save reference to objects and offload media stopping, muxing and saving to Dispatchers.IO
-        // so the UI / Main Thread NEVER freezes or gets stuck!
+        // Save references to active session objects before clearing them
         val recDuration = recordingDurationMs
         val targetRes = targetResolution
         val currentTempVideo = tempVideoFile
         val currentTempAudio = tempAudioFile
         val currentMediaRecorder = mediaRecorder
         val currentAudioHelper = audioCaptureHelper
+        val currentVirtualDisplay = virtualDisplay
+        val currentProjection = mediaProjection
 
         mediaRecorder = null
         audioCaptureHelper = null
+        virtualDisplay = null
+        mediaProjection = null
         tempVideoFile = null
         tempAudioFile = null
 
-        // Restore physical speaker volume if it was modified for dual recording
-        val savedOrigVol = originalMediaVolume
-        originalMediaVolume = null
-        if (savedOrigVol != null) {
-            try {
-                val am = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-                am?.setStreamVolume(AudioManager.STREAM_MUSIC, savedOrigVol, 0)
-                Log.d(TAG, "Restored physical media volume to $savedOrigVol")
-            } catch (_: Exception) {}
-        }
 
         isSaving = true
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                // STEP 1: Stop and flush AudioCaptureHelper first so AudioRecord cleanly unbinds from AudioFlinger
+                try {
+                    currentAudioHelper?.stop()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error stopping audio helper", e)
+                }
+
+                // STEP 2: Stop Video MediaRecorder
                 try {
                     currentMediaRecorder?.apply {
                         stop()
                         release()
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Error stopping media recorder", e)
                 }
 
+                // STEP 3: Release VirtualDisplay surface
                 try {
-                    currentAudioHelper?.stop()
+                    currentVirtualDisplay?.release()
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Error releasing virtual display", e)
                 }
 
-                // Remux video and audio files if currentTempAudio exists
-                val fileToSave = if (currentTempAudio != null && currentTempAudio.exists() && currentTempAudio.length() > 0) {
-                    val mergedFile = File(cacheDir, "merged_recording.mp4")
+                // STEP 4: ONLY stop MediaProjection after all consumers (AudioRecord + VirtualDisplay) are released!
+                // Stopping MediaProjection before AudioRecord causes AudioFlinger native session leaks on OEM HALs.
+                try {
+                    currentProjection?.stop()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error stopping media projection", e)
+                }
+
+                // STEP 5: Remux video and audio files if both temp video and audio exist
+                val fileToSave = if (currentTempAudio != null && currentTempAudio.exists() && currentTempAudio.length() > 0 &&
+                    currentTempVideo != null && currentTempVideo.exists() && currentTempVideo.length() > 0) {
+                    val mergedFile = File(cacheDir, "merged_${System.currentTimeMillis()}.mp4")
                     if (mergedFile.exists()) {
                         mergedFile.delete()
                     }
                     try {
-                        mergeVideoAndAudio(currentTempVideo!!, currentTempAudio, mergedFile)
+                        mergeVideoAndAudio(currentTempVideo, currentTempAudio, mergedFile)
                         try { currentTempAudio.delete() } catch (_: Exception) {}
                         try { currentTempVideo.delete() } catch (_: Exception) {}
                         mergedFile
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Remux failed, falling back to video only", e)
+                        try { mergedFile.delete() } catch (_: Exception) {}
+                        try { currentTempAudio.delete() } catch (_: Exception) {}
                         currentTempVideo // Fallback to video-only if remuxing fails
                     }
                 } else {
@@ -920,40 +913,67 @@ class ScreenRecordService : LifecycleService() {
                 }
             }
             
+            if (videoTrackIndex == -1) {
+                throw java.io.IOException("No video track found in temp video file")
+            }
+            if (audioTrackIndex == -1) {
+                throw java.io.IOException("No audio track found in temp audio file")
+            }
+
             m.start()
+            var muxerStarted = true
             
-            val bufferSize = 1024 * 1024
+            val bufferSize = 2 * 1024 * 1024
             val buffer = ByteBuffer.allocate(bufferSize)
             val bufferInfo = MediaCodec.BufferInfo()
             
             // Interleave video and audio tracks chronologically
-            var videoDone = videoTrackIndex == -1
-            var audioDone = audioTrackIndex == -1
+            var videoDone = false
+            var audioDone = false
+
+            var lastVideoPts = -1L
+            var lastAudioPts = -1L
 
             while (!videoDone || !audioDone) {
                 val videoTime = if (!videoDone) extractorVideo.sampleTime else Long.MAX_VALUE
                 val audioTime = if (!audioDone) extractorAudio.sampleTime else Long.MAX_VALUE
 
                 if (!videoDone && (audioDone || videoTime <= audioTime)) {
+                    buffer.clear()
                     bufferInfo.offset = 0
                     bufferInfo.size = extractorVideo.readSampleData(buffer, 0)
                     if (bufferInfo.size < 0) {
                         videoDone = true
                     } else {
-                        bufferInfo.presentationTimeUs = videoTime
+                        var pts = maxOf(0L, videoTime)
+                        if (pts <= lastVideoPts) pts = lastVideoPts + 1000L
+                        lastVideoPts = pts
+                        bufferInfo.presentationTimeUs = pts
                         bufferInfo.flags = extractorVideo.sampleFlags
-                        m.writeSampleData(videoTrackIndex, buffer, bufferInfo)
+                        if (bufferInfo.size > 0) {
+                            buffer.position(0)
+                            buffer.limit(bufferInfo.size)
+                            m.writeSampleData(videoTrackIndex, buffer, bufferInfo)
+                        }
                         extractorVideo.advance()
                     }
                 } else if (!audioDone) {
+                    buffer.clear()
                     bufferInfo.offset = 0
                     bufferInfo.size = extractorAudio.readSampleData(buffer, 0)
                     if (bufferInfo.size < 0) {
                         audioDone = true
                     } else {
-                        bufferInfo.presentationTimeUs = audioTime
+                        var pts = maxOf(0L, audioTime)
+                        if (pts <= lastAudioPts) pts = lastAudioPts + 1000L
+                        lastAudioPts = pts
+                        bufferInfo.presentationTimeUs = pts
                         bufferInfo.flags = extractorAudio.sampleFlags
-                        m.writeSampleData(audioTrackIndex, buffer, bufferInfo)
+                        if (bufferInfo.size > 0) {
+                            buffer.position(0)
+                            buffer.limit(bufferInfo.size)
+                            m.writeSampleData(audioTrackIndex, buffer, bufferInfo)
+                        }
                         extractorAudio.advance()
                     }
                 }
@@ -961,6 +981,7 @@ class ScreenRecordService : LifecycleService() {
             
             try {
                 m.stop()
+                muxerStarted = false
             } catch (e: Exception) {
                 e.printStackTrace()
             }

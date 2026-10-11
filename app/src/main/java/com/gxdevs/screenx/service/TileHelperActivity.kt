@@ -193,6 +193,6 @@ class TileHelperActivity : ComponentActivity() {
             putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
             putExtra(ScreenRecordService.EXTRA_RESULT_DATA, resultData)
         }
-        startForegroundService(serviceIntent)
+        androidx.core.content.ContextCompat.startForegroundService(this, serviceIntent)
     }
 }
