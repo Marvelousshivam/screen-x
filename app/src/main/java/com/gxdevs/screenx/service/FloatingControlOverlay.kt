@@ -57,7 +57,10 @@ class FloatingControlOverlay(private val context: Context) {
 
     private val density = context.resources.displayMetrics.density
     private val settingsManager = SettingsManager(context)
-    private val overlayScope = CoroutineScope(Dispatchers.Main)
+    // BUG-10 FIX: Attach a SupervisorJob so the scope can be properly cancelled in dismiss(),
+    // preventing coroutine leaks every time the floating overlay is dismissed.
+    private val overlayJob = kotlinx.coroutines.SupervisorJob()
+    private val overlayScope = CoroutineScope(Dispatchers.Main + overlayJob)
 
     // Pre-computed expanded pill width (dp math):
     // orb(34) + 5×btn(34) + 5×gap(4) + padding(8) ≈ 244dp
@@ -501,11 +504,14 @@ class FloatingControlOverlay(private val context: Context) {
                                 onStop()
                             }
                             GlassBtn(b3, if (isMicMuted) Icons.Outlined.MicOff else Icons.Outlined.Mic, if (isMicMuted) StopRed else Color.White, if (isMicMuted) "Unmute microphone" else "Mute microphone") {
+                                // BUG-6 FIX: Do NOT optimistically flip isMicMuted here — if the
+                                // service rejects the toggle (no mic active), the local state would
+                                // diverge from reality. The 500 ms polling loop reads
+                                // ScreenRecordService.isMicMuted and keeps the icon in sync.
                                 val intent = Intent(context, ScreenRecordService::class.java).apply {
                                     action = ScreenRecordService.ACTION_TOGGLE_MIC
                                 }
                                 context.startService(intent)
-                                isMicMuted = !isMicMuted
                             }
                             GlassBtn(b4, Icons.Outlined.Brush, Color.White, "Screen brush") { onBrushToggle() }
                             GlassBtn(b5, Icons.Outlined.CameraAlt, Color.White, "Take screenshot") { onScreenshot() }
@@ -678,6 +684,8 @@ class FloatingControlOverlay(private val context: Context) {
     fun dismiss(fromUserDrag: Boolean = false) {
         val callback = onDismissCallback
         onDismissCallback = null
+        // BUG-10 FIX: Cancel all coroutines launched in overlayScope to prevent leaks
+        overlayJob.cancel()
         hideDismissGradient()
         lifecycleOwner?.onDestroy()
         rootView?.let { 

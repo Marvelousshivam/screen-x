@@ -94,7 +94,7 @@ object AdbManager {
 
         val info = X509CertInfo()
         info.set("version", CertificateVersion(2))
-        info.set("serialNumber", CertificateSerialNumber(Random().nextInt() and Int.MAX_VALUE))
+        info.set("serialNumber", CertificateSerialNumber(SecureRandom().nextInt() and Int.MAX_VALUE))
         info.set("algorithmID", CertificateAlgorithmId(AlgorithmId.get("SHA512withRSA")))
         info.set("subject", CertificateSubjectName(x500))
         info.set("key", CertificateX509Key(keyPair.public))

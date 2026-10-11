@@ -302,6 +302,10 @@ class AdbRecordService : LifecycleService() {
         isRecording = false
         _isRecordingFlow.value = false
         notifyTileService()
+        // BUG-19 FIX: success param was previously ignored; now used for logging
+        if (!success) {
+            Log.w(TAG, "Stealth recording session ended without saving valid video.")
+        }
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -325,12 +329,12 @@ class AdbRecordService : LifecycleService() {
 
     /** Broadcast so MainActivity refreshes the gallery */
     private fun notifyRecordingSaved() {
-        val intent = Intent("com.gxdevs.screenx.action.RECORDING_SAVED")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            sendBroadcast(intent, null)
-        } else {
-            sendBroadcast(intent)
+        // BUG-5 FIX: Use setPackage() so the broadcast is restricted to this app.
+        // Without it, the RECEIVER_NOT_EXPORTED receiver in MainActivity may not receive it on API 33+.
+        val intent = Intent("com.gxdevs.screenx.action.RECORDING_SAVED").apply {
+            setPackage(packageName)
         }
+        sendBroadcast(intent)
     }
 
     // ── Notification ──────────────────────────────────────────────────────────

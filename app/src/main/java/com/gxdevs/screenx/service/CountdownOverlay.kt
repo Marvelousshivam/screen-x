@@ -63,16 +63,17 @@ class CountdownOverlay(private val context: Context) {
 
         val runnable = object : Runnable {
             override fun run() {
-                count--
                 if (count > 0) {
                     textView.text = count.toString()
+                    count--
                     handler.postDelayed(this, 1000)
                 } else {
                     onFinished()
                 }
             }
         }
-        handler.postDelayed(runnable, 1000)
+        // Fire immediately so "3" is shown at once, then 2, 1, then onFinished
+        handler.post(runnable)
     }
 
     fun dismiss() {

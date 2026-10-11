@@ -404,20 +404,27 @@ class ScreenRecordService : LifecycleService() {
             return
         }
 
-        // Start Foreground immediately for Android 14 requirements
+        // Start Foreground immediately for Android 14 requirements.
+        // BUG-2 FIX: Guard against double-startForeground() crash on Android 14+ when floating
+        // controls are already active (promoted as SPECIAL_USE). Re-calling startForeground() with
+        // a different type throws ForegroundServiceTypeNotAllowedException on API 34+.
         val initialNotification = createNotification("Starting countdown...")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            var type = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                    type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        if (!isForeground) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                var type = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                    }
                 }
+                startForeground(NOTIFICATION_ID, initialNotification, type)
+            } else {
+                startForeground(NOTIFICATION_ID, initialNotification)
             }
-            startForeground(NOTIFICATION_ID, initialNotification, type)
+            isForeground = true
         } else {
-            startForeground(NOTIFICATION_ID, initialNotification)
+            updateNotification("Starting countdown...")
         }
-        isForeground = true
 
         lifecycleScope.launch {
             val countdownSecs = settingsManager.countdownFlow.first()
@@ -513,11 +520,23 @@ class ScreenRecordService : LifecycleService() {
                 }
 
                 // Metrics
-                val metrics = DisplayMetrics()
-                @Suppress("DEPRECATION")
-                windowManager.defaultDisplay.getRealMetrics(metrics)
-                val screenWidth = metrics.widthPixels
-                val screenHeight = metrics.heightPixels
+                // BUG-17 FIX: Use currentWindowMetrics on API 30+ (getRealMetrics deprecated)
+                val screenWidth: Int
+                val screenHeight: Int
+                val screenDensityDpi: Int
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val bounds = windowManager.currentWindowMetrics.bounds
+                    screenWidth = bounds.width()
+                    screenHeight = bounds.height()
+                    screenDensityDpi = resources.configuration.densityDpi
+                } else {
+                    val metrics = DisplayMetrics()
+                    @Suppress("DEPRECATION")
+                    windowManager.defaultDisplay.getRealMetrics(metrics)
+                    screenWidth = metrics.widthPixels
+                    screenHeight = metrics.heightPixels
+                    screenDensityDpi = metrics.densityDpi
+                }
                 
                 val dimensions = getTargetDimensions(targetResolution, screenWidth, screenHeight, orientationSetting)
                 val recordWidth = dimensions.first
@@ -528,7 +547,7 @@ class ScreenRecordService : LifecycleService() {
                     "ScreenXDisplay",
                     recordWidth,
                     recordHeight,
-                    metrics.densityDpi,
+                    screenDensityDpi,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
                     mediaRecorder?.surface,
                     null,
@@ -625,10 +644,21 @@ class ScreenRecordService : LifecycleService() {
             // Set paths
             setOutputFile(tempVideoFile?.absolutePath)
 
-            // Setup dimensions
-            val metrics = DisplayMetrics()
-            windowManager.defaultDisplay.getRealMetrics(metrics)
-            val dimensions = getTargetDimensions(targetResolution, metrics.widthPixels, metrics.heightPixels, orientationSetting)
+            // Setup dimensions (BUG-17 FIX: use currentWindowMetrics on API 30+)
+            val setupWidth: Int
+            val setupHeight: Int
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val bounds = windowManager.currentWindowMetrics.bounds
+                setupWidth = bounds.width()
+                setupHeight = bounds.height()
+            } else {
+                val m = DisplayMetrics()
+                @Suppress("DEPRECATION")
+                windowManager.defaultDisplay.getRealMetrics(m)
+                setupWidth = m.widthPixels
+                setupHeight = m.heightPixels
+            }
+            val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
             setVideoSize(dimensions.first, dimensions.second)
 
             // Setup Encoders
@@ -882,6 +912,7 @@ class ScreenRecordService : LifecycleService() {
         val extractorVideo = MediaExtractor()
         val extractorAudio = MediaExtractor()
         var muxer: MediaMuxer? = null
+        var muxerStarted = false
 
         try {
             extractorVideo.setDataSource(videoFile.absolutePath)
@@ -921,7 +952,7 @@ class ScreenRecordService : LifecycleService() {
             }
 
             m.start()
-            var muxerStarted = true
+            muxerStarted = true
             
             val bufferSize = 2 * 1024 * 1024
             val buffer = ByteBuffer.allocate(bufferSize)
@@ -986,6 +1017,12 @@ class ScreenRecordService : LifecycleService() {
                 e.printStackTrace()
             }
         } finally {
+            // BUG-4 FIX: If m.stop() threw an exception, muxerStarted is still true here.
+            // Calling release() on a started-but-not-stopped muxer corrupts the MP4 output.
+            // Always attempt stop() before release() if the muxer was ever started.
+            try {
+                if (muxerStarted) muxer?.stop()
+            } catch (_: Exception) {}
             try {
                 muxer?.release()
             } catch (e: Exception) {
@@ -1061,20 +1098,22 @@ class ScreenRecordService : LifecycleService() {
 
             imageReader.setOnImageAvailableListener({ reader ->
                 var image: Image? = null
+                var paddedBitmap: Bitmap? = null
+                var finalBitmap: Bitmap? = null
                 try {
                     image = reader.acquireLatestImage()
                     if (image != null) {
-                        val planes     = image.planes
-                        val buffer     = planes[0].buffer
+                        val planes      = image.planes
+                        val buffer      = planes[0].buffer
                         val pixelStride = planes[0].pixelStride
-                        val rowStride  = planes[0].rowStride
-                        val rowPadding = rowStride - pixelStride * width
+                        val rowStride   = planes[0].rowStride
+                        val rowPadding  = rowStride - pixelStride * width
 
-                        val bitmap = Bitmap.createBitmap(
+                        paddedBitmap = Bitmap.createBitmap(
                             width + rowPadding / pixelStride, height, Bitmap.Config.ARGB_8888
                         )
-                        bitmap.copyPixelsFromBuffer(buffer)
-                        val finalBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height)
+                        paddedBitmap.copyPixelsFromBuffer(buffer)
+                        finalBitmap = Bitmap.createBitmap(paddedBitmap, 0, 0, width, height)
                         saveScreenshotToMediaStore(finalBitmap)
                     }
                 } catch (e: Exception) {
@@ -1082,6 +1121,9 @@ class ScreenRecordService : LifecycleService() {
                 } finally {
                     image?.close()
                     imageReader.close()
+                    // BUG-11 FIX: Recycle both bitmaps to prevent ~10 MB heap leak per screenshot
+                    try { paddedBitmap?.recycle() } catch (_: Exception) {}
+                    try { finalBitmap?.recycle() }  catch (_: Exception) {}
                     // Restore original surface
                     if (originalSurface != null && originalSurface.isValid) {
                         try {
@@ -1207,8 +1249,11 @@ class ScreenRecordService : LifecycleService() {
         }
         dismissFloatingControls()
         dismissBrushOverlay()
-        stopForeground(true)
-        isForeground = false
+        // BUG-13 FIX: Only call stopForeground if we are actually running as a foreground service
+        if (isForeground) {
+            stopForeground(true)
+            isForeground = false
+        }
         stopSelf()
     }
 
