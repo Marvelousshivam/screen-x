@@ -121,7 +121,7 @@ fun SettingsScreen(
     val audioSource by settingsManager.audioSourceFlow.collectAsState(initial = "Mic")
     val voicePriority by settingsManager.voicePriorityFlow.collectAsState(initial = true)
     val micVolume by settingsManager.micVolumeFlow.collectAsState(initial = 200)
-    val internalAudioVolume by settingsManager.internalAudioVolumeFlow.collectAsState(initial = 80)
+    val internalAudioVolume by settingsManager.internalAudioVolumeFlow.collectAsState(initial = 100)
     val vocalClarity by settingsManager.vocalClarityFlow.collectAsState(initial = true)
     val countdown by settingsManager.countdownFlow.collectAsState(initial = 3)
     val showFloating by settingsManager.showFloatingFlow.collectAsState(initial = true)
@@ -866,7 +866,7 @@ fun SettingsScreen(
         val mapping = linkedMapOf(
             "Mic" to "Microphone Only",
             "System" to "Internal Audio Only",
-            "MicSystem" to "Mic + Internal Audio (Mixed)",
+            "MicSystem" to "Mic + Internal Audio (Combined)",
             "None" to "No Audio (Muted)"
         )
         val options = mapping.values.toList()
@@ -888,17 +888,17 @@ fun SettingsScreen(
     if (showMicVolumeDialog) {
         val options = listOf(
             "100% (Standard)",
-            "200% (+6 dB)",
+            "200% (+6 dB • Recommended)",
             "300% (+9.5 dB)",
-            "350% (+11 dB • Recommended)",
+            "350% (+11 dB)",
             "450% (+13 dB • Quiet Voice)",
             "500% (+14 dB • High Boost)"
         )
         val currentStr = when (micVolume) {
             100 -> "100% (Standard)"
-            200 -> "200% (+6 dB)"
+            200 -> "200% (+6 dB • Recommended)"
             300 -> "300% (+9.5 dB)"
-            350 -> "350% (+11 dB • Recommended)"
+            350 -> "350% (+11 dB)"
             450 -> "450% (+13 dB • Quiet Voice)"
             500 -> "500% (+14 dB • High Boost)"
             else -> "$micVolume%"
@@ -909,7 +909,7 @@ fun SettingsScreen(
             selectedOption = currentStr,
             onDismiss = { showMicVolumeDialog = false },
             onSelect = { selected ->
-                val percent = selected.substringBefore("%").toIntOrNull() ?: 350
+                val percent = selected.substringBefore("%").toIntOrNull() ?: 200
                 coroutineScope.launch { settingsManager.setMicVolume(percent) }
                 showMicVolumeDialog = false
             }
@@ -919,20 +919,16 @@ fun SettingsScreen(
     // Internal Audio Mix Dialog
     if (showInternalVolumeDialog) {
         val options = listOf(
-            "5% (-40 dB • Whisper Quiet)",
-            "15% (-33 dB • Quiet Bed • Recommended)",
-            "30% (-20 dB • Balanced Game)",
-            "50% (-12 dB • Prominent Game)",
-            "75% (-5 dB)",
-            "100% (Full Output)"
+            "25% (Background Audio)",
+            "50% (Balanced Voice & Game)",
+            "75% (Clear Game Audio)",
+            "100% (Full Output • Recommended)"
         )
         val currentStr = when (internalAudioVolume) {
-            5 -> "5% (-40 dB • Whisper Quiet)"
-            15 -> "15% (-33 dB • Quiet Bed • Recommended)"
-            30 -> "30% (-20 dB • Balanced Game)"
-            50 -> "50% (-12 dB • Prominent Game)"
-            75 -> "75% (-5 dB)"
-            100 -> "100% (Full Output)"
+            25 -> "25% (Background Audio)"
+            50 -> "50% (Balanced Voice & Game)"
+            75 -> "75% (Clear Game Audio)"
+            100 -> "100% (Full Output • Recommended)"
             else -> "$internalAudioVolume%"
         }
         OptionSelectionDialog(
@@ -941,7 +937,7 @@ fun SettingsScreen(
             selectedOption = currentStr,
             onDismiss = { showInternalVolumeDialog = false },
             onSelect = { selected ->
-                val percent = selected.substringBefore("%").toIntOrNull() ?: 15
+                val percent = selected.substringBefore("%").toIntOrNull() ?: 100
                 coroutineScope.launch { settingsManager.setInternalAudioVolume(percent) }
                 showInternalVolumeDialog = false
             }

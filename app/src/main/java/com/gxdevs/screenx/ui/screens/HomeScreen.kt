@@ -1438,7 +1438,7 @@ fun HomeScreen(
         val mapping = linkedMapOf(
             "Mic" to "Microphone Only",
             "System" to "Internal Audio Only",
-            "MicSystem" to "Mic + Internal Audio (Voice Priority)",
+            "MicSystem" to "Mic + Internal Audio (Combined)",
             "None" to "No Audio (Muted)"
         )
         val options = mapping.values.toList()

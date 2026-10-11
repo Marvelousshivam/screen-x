@@ -127,11 +127,11 @@ class SettingsManager(private val context: Context) {
     }
 
     val micVolumeFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_MIC_VOLUME] ?: 350
+        preferences[KEY_MIC_VOLUME] ?: 200
     }
 
     val internalAudioVolumeFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_INTERNAL_AUDIO_VOLUME] ?: 35
+        preferences[KEY_INTERNAL_AUDIO_VOLUME] ?: 100
     }
 
     val vocalClarityFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
