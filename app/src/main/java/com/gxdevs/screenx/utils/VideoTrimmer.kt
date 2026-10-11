@@ -312,7 +312,11 @@ object VideoTrimmer {
 
                             info.presentationTimeUs = (pts - firstPts) + outputOffsetUs
                             info.flags              = extractor.sampleFlags
-                            muxer.writeSampleData(dstTrackIdx[srcTrack], buf, info)
+                            if (info.size > 0) {
+                                buf.position(0)
+                                buf.limit(info.size)
+                                muxer.writeSampleData(dstTrackIdx[srcTrack], buf, info)
+                            }
                             anySampleWritten  = true
                             trackHadSamples   = true
 
@@ -385,7 +389,11 @@ object VideoTrimmer {
                     if (info.size < 0) break
                     info.presentationTimeUs = ex.sampleTime
                     info.flags              = ex.sampleFlags
-                    muxer.writeSampleData(dstTracks[t], buf, info)
+                    if (info.size > 0) {
+                        buf.position(0)
+                        buf.limit(info.size)
+                        muxer.writeSampleData(dstTracks[t], buf, info)
+                    }
                     ex.advance()
                 }
                 ex.release()
@@ -407,7 +415,11 @@ object VideoTrimmer {
                     if (firstPts == Long.MIN_VALUE) firstPts = pts
                     info.presentationTimeUs = (pts - firstPts) + dur1
                     info.flags              = ex.sampleFlags
-                    muxer.writeSampleData(dstTracks[t], buf, info)
+                    if (info.size > 0) {
+                        buf.position(0)
+                        buf.limit(info.size)
+                        muxer.writeSampleData(dstTracks[t], buf, info)
+                    }
                     ex.advance()
                 }
                 ex.release()
