@@ -82,6 +82,11 @@ object VideoTrimmer {
         val seg1File = File(outputFile.parent, "seg1_$ts.mp4")
         val seg2File = File(outputFile.parent, "seg2_${ts + 1}.mp4")
 
+        // BUG-8 FIX: Track whether seg1 was renamed (not just moved) to avoid deleting outputFile
+        // in the finally block on OEM filesystems where renameTo() copies instead of moves.
+        var seg1RenamedToOutput = false
+        var seg2RenamedToOutput = false
+
         try {
             if (hasSeg1) {
                 extractSegment(
@@ -104,11 +109,13 @@ object VideoTrimmer {
             when {
                 !hasSeg1 -> {
                     // Only seg2: rename
-                    seg2File.renameTo(outputFile)
+                    seg2RenamedToOutput = seg2File.renameTo(outputFile)
+                    if (!seg2RenamedToOutput) seg2File.copyTo(outputFile, overwrite = true)
                 }
                 !seg2File.exists() || seg2File.length() == 0L -> {
                     // Only seg1: rename
-                    seg1File.renameTo(outputFile)
+                    seg1RenamedToOutput = seg1File.renameTo(outputFile)
+                    if (!seg1RenamedToOutput) seg1File.copyTo(outputFile, overwrite = true)
                 }
                 else -> {
                     concatenate(seg1File, seg2File, outputFile, progressCallback)
@@ -116,8 +123,9 @@ object VideoTrimmer {
             }
             progressCallback(1f)
         } finally {
-            seg1File.takeIf { it.exists() }?.delete()
-            seg2File.takeIf { it.exists() }?.delete()
+            // Only delete seg1/seg2 temp files if they were NOT renamed to outputFile
+            if (!seg1RenamedToOutput) seg1File.takeIf { it.exists() }?.delete()
+            if (!seg2RenamedToOutput) seg2File.takeIf { it.exists() }?.delete()
         }
     }
 
@@ -456,12 +464,23 @@ object VideoTrimmer {
             ex.setDataSource(file.absolutePath)
             ex.selectTrack(t)
 
-            // Fast path: seek near the end
+            // BUG-20 FIX: Fast-path seek lands at the last keyframe, which is NOT necessarily
+            // the last frame (B-frames / large GOPs can have later PTS after the keyframe).
+            // After seeking, scan forward from the keyframe to find the true last sample PTS.
             ex.seekTo(Long.MAX_VALUE / 2, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-            val fastPts = ex.sampleTime
-            // fastPts >= 0 means a valid sample was found (including t=0 for single-frame)
-            if (fastPts >= 0L) {
-                if (fastPts > maxPts) maxPts = fastPts
+            val keyframePts = ex.sampleTime
+            if (keyframePts >= 0L) {
+                // Scan forward from this keyframe to find the actual last PTS
+                var lastPts = keyframePts
+                while (true) {
+                    info.offset = 0
+                    info.size   = ex.readSampleData(buf, 0)
+                    if (info.size < 0) break
+                    val pts = ex.sampleTime
+                    if (pts > lastPts) lastPts = pts
+                    ex.advance()
+                }
+                if (lastPts > maxPts) maxPts = lastPts
                 ex.release()
                 continue
             }
