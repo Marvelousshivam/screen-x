@@ -239,6 +239,22 @@ fun HomeScreen(
     onRefresh: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val appIconBitmap = remember(context) {
+        try {
+            val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
+            if (drawable != null) {
+                val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96
+                val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val canvas = android.graphics.Canvas(bitmap)
+                drawable.setBounds(0, 0, width, height)
+                drawable.draw(canvas)
+                bitmap.asImageBitmap()
+            } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
     val coroutineScope = rememberCoroutineScope()
     var selectedVideoForPlayback by remember { mutableStateOf<RecordedVideo?>(null) }
     var selectedScreenshotForViewer by remember { mutableStateOf<RecordedVideo?>(null) }
@@ -462,11 +478,21 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.logo_no_bg),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        if (appIconBitmap != null) {
+                            Image(
+                                bitmap = appIconBitmap,
+                                contentDescription = "ScreenX Icon",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_no_bg),
+                                contentDescription = "ScreenX Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                         Text(
                             "ScreenX",
                             fontSize = 22.sp,
@@ -690,11 +716,21 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo_no_bg),
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (appIconBitmap != null) {
+                        Image(
+                            bitmap = appIconBitmap,
+                            contentDescription = "ScreenX Icon",
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_no_bg),
+                            contentDescription = "ScreenX Icon",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                     Text(
                         "ScreenX",
                         fontSize = 24.sp,
