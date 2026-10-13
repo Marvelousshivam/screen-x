@@ -81,13 +81,18 @@ fun UpdateDialog(
             )
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 22.dp)
-                .padding(bottom = 20.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 640.dp)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 22.dp)
+                    .padding(bottom = 20.dp)
+            ) {
             // ScreenX Header Row with App Launcher Icon
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -285,6 +290,7 @@ fun UpdateDialog(
             }
         }
     }
+}
 }
 
 /**

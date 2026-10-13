@@ -78,6 +78,7 @@ import com.composables.icons.lucide.Zap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -337,19 +338,27 @@ fun HomeScreen(
     // Check internal audio status
     val isInternalAudioSelected = audioSource == "System" || audioSource == "MicSystem"
 
-    // Configuration / Orientation detection
+    // Configuration / Orientation & Foldable / Tablet detection
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isWideScreen = configuration.screenWidthDp >= 600
+    val useMultiColumn = isLandscape || isWideScreen
 
-    if (isLandscape) {
-        // Landscape Layout
-        Row(
+    if (useMultiColumn) {
+        // Multi-column Layout (Landscape, Foldables unfolded & Tablets)
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 1200.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             // Left Side: Record Card (sized down to fit vertically)
             Card(
                 shape = RoundedCornerShape(24.dp),
@@ -695,15 +704,22 @@ fun HomeScreen(
                 }
             }
         }
+        }
     } else {
         // Portrait Layout
         val scrollState = rememberScrollState()
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(scrollState)
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 600.dp)
+                    .verticalScroll(scrollState)
+            ) {
             // Header Bar
             Row(
                 modifier = Modifier
@@ -1468,6 +1484,7 @@ fun HomeScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
         }
+        }
     }
 
     if (showAudioDialog) {
@@ -2088,6 +2105,7 @@ fun VideoPlayerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 640.dp),
         title = {
             Text(
                 text = videoName,
@@ -2102,7 +2120,7 @@ fun VideoPlayerDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.Black)
             ) {
@@ -2366,16 +2384,21 @@ fun AdbPairingDialog(
             )
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 22.dp)
-                .padding(bottom = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 640.dp)
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 22.dp)
+                    .padding(bottom = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
                 // Header Row with Title, Status & Close Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2823,6 +2846,7 @@ fun AdbPairingDialog(
             }
         }
     }
+    }
 
 @Composable
 private fun AdbSetupStep(number: String, title: String, text: String) {
@@ -2891,15 +2915,20 @@ fun AdbLimitationsDialog(
             )
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 20.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 640.dp)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
             // Title Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -3040,6 +3069,7 @@ fun AdbLimitationsDialog(
         }
     }
 }
+}
 
 @Composable
 private fun AdbLimitationRow(
@@ -3101,6 +3131,7 @@ fun OptionSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 440.dp),
         title = {
             Text(
                 text = title,
@@ -3113,7 +3144,9 @@ fun OptionSelectionDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
             ) {
                 options.forEach { option ->
                     val isSelected = option == selectedOption

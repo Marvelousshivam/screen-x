@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -491,14 +492,20 @@ fun TrimmerEditor(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .navigationBarsPadding()
                 .background(MaterialTheme.colorScheme.background),
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.TopCenter
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 900.dp)
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
             // ── Video player ──────────────────────────────────────────────
             Box(
@@ -1028,12 +1035,14 @@ fun TrimmerEditor(
 
             Spacer(Modifier.height(12.dp))
         }
+        }
     }
 
     // ── Processing overlay ────────────────────────────────────────────────────
     if (isProcessing) {
         AlertDialog(
             onDismissRequest = {},
+            modifier = Modifier.widthIn(max = 440.dp),
             title = {
                 Text(
                     text = processingLabel,
@@ -1083,6 +1092,7 @@ fun TrimmerEditor(
     if (showExitConfirmation) {
         AlertDialog(
             onDismissRequest = { showExitConfirmation = false },
+            modifier = Modifier.widthIn(max = 440.dp),
             title = {
                 Text(
                     text = "Discard changes?",

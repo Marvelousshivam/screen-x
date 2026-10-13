@@ -215,11 +215,17 @@ fun SettingsScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = 768.dp)
+        ) {
         // Top Header matching HomeScreen spacing
         Row(
             modifier = Modifier
@@ -662,9 +668,9 @@ fun SettingsScreen(
                     OrionStackedGroupCard {
                         val appVersion = remember {
                             try {
-                                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.4.1"
+                                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.5.0"
                             } catch (_: Exception) {
-                                "1.4.1"
+                                "1.5.0"
                             }
                         }
                         OrionSettingsInfoItem(
@@ -725,6 +731,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
     }
 
     // Update Dialog if available from manual check

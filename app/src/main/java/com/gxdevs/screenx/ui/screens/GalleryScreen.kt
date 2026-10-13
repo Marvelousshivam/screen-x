@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -214,7 +215,7 @@ fun GalleryScreen(
                 } else {
                     if (isGridView) {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
+                            columns = GridCells.Adaptive(minSize = 160.dp),
                             contentPadding = PaddingValues(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -237,25 +238,32 @@ fun GalleryScreen(
                             }
                         }
                     } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxSize()
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.TopCenter
                         ) {
-                            items(filteredList, key = { it.id }) { item ->
-                                GalleryListItem(
-                                    item = item,
-                                    onClick = {
-                                        if (item.isVideo) {
-                                            selectedVideoForPlayback = item
-                                        } else {
-                                            selectedScreenshotForViewer = item
-                                        }
-                                    },
-                                    onDelete = { mediaToDelete = item },
-                                    onRename = { mediaToRename = item },
-                                    onTrim = { onTrimVideoClick(item) }
-                                )
+                            LazyColumn(
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .widthIn(max = 840.dp)
+                            ) {
+                                items(filteredList, key = { it.id }) { item ->
+                                    GalleryListItem(
+                                        item = item,
+                                        onClick = {
+                                            if (item.isVideo) {
+                                                selectedVideoForPlayback = item
+                                            } else {
+                                                selectedScreenshotForViewer = item
+                                            }
+                                        },
+                                        onDelete = { mediaToDelete = item },
+                                        onRename = { mediaToRename = item },
+                                        onTrim = { onTrimVideoClick(item) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -788,6 +796,7 @@ fun RenameMediaDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 440.dp),
         title = {
             Text(
                 text = if (isVideo) "Rename Recording" else "Rename Screenshot",
@@ -839,6 +848,7 @@ fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 440.dp),
         title = {
             Text(
                 text = if (media.isVideo) "Delete Recording?" else "Delete Screenshot?",
