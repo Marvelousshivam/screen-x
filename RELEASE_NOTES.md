@@ -1,44 +1,36 @@
-# ScreenX Release Notes — v1.4.1
+# ScreenX Release Notes — v1.5.0
 
-## 🚀 What's New & Enhancements
+## 🌟 What's New in v1.5.0
 
-* **🎨 Native Mipmap App Icon on Home Screen**
-  * Integrated the official app launcher icon (`R.mipmap.ic_launcher`) alongside the "ScreenX" title on the Home Screen across both portrait and landscape headers with smooth rounded squircle styling.
+### 🚀 Peak Performance & Universal Playback Optimization
+* **Universal Macroblock 16-Pixel Hardware Alignment**:
+  * Resolved playback jerkiness and frame stuttering on devices with non-standard panel resolutions.
+  * Automatically calculates macroblock-aligned encoder dimensions (`height % 16 == 0`, `width % 16 == 0`) across Qualcomm Snapdragon, MediaTek Dimensity/Helio, Samsung Exynos, and Google Tensor VPUs.
+* **AVC Baseline Profile & Monotonic Timestamps**:
+  * Enforces `AVCProfileBaseline` encoding to prevent B-frame reordering judder, ensuring presentation timestamps match decode timestamps strictly (`PTS == DTS`).
+  * Normalizes track timestamps with unified monotonic offsets across both video and internal/microphone audio tracks to prevent A/V desync and playback freezing.
+* **SurfaceFlinger Auto-Mirroring**:
+  * Configured virtual display projection with `VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR` to ensure consistent compositor mirroring without dropped frames on aggressive OEM vendor skins (Realme UI, ColorOS, MIUI, HyperOS).
+* **Dynamic Hardware Capability Negotiation**:
+  * Intelligently queries encoder supported resolutions, frame rates, and bitrates with safe universal fallbacks. Clamped universal recording bitrate to an optimal 10 Mbps and 60 FPS standard.
 
 ---
 
-## 🐛 Bug Fixes & Stability Improvements (Comprehensive Line-by-Line Audit)
-
-* **⏱️ Countdown Overlay Timer Correction**:
-  * Fixed an issue where the countdown timer started at 3 but decremented before rendering, resulting in only ~2 seconds of visible countdown and firing 1 second early. Now smoothly counts 3 → 2 → 1 for the full 3 seconds before recording begins.
-
-* **🛡️ Android 14+ Foreground Service Stability**:
-  * Guarded `startRecordingSequence` with foreground service check (`!isForeground`) to eliminate `ForegroundServiceTypeNotAllowedException` / crash when switching from floating control overlay to active recording.
-  * Modernized display metrics to use `WindowManager.currentWindowMetrics.bounds` and `densityDpi` on Android 11+ (API 30+), eliminating deprecated API usages.
-
-* **🎬 MediaMuxer Corrupt Output Prevention**:
-  * Added safety checks in `mergeVideoAndAudio` to cleanly invoke `muxer.stop()` before `release()` if muxer was started, preventing corrupted MP4 files and native crashes during error states.
-
-* **✂️ Video Trimmer Segment Preservation**:
-  * Fixed segment loss in `cutMiddle` on OEM filesystems where `renameTo()` could cause intermediate clips to be erroneously deleted in the `finally` cleanup block. Added fallback file copying and rename tracking.
-  * Resolved timeline PTS measurement in `measureDuration` by continuing scan past keyframes to accurately detect the true last frame PTS for smooth clip concatenation without audio/video overlap.
-
-* **🧹 Memory Leak & Resource Cleanup**:
-  * Screenshot processing now explicitly recycles intermediate ARGB bitmaps immediately after writing to MediaStore, freeing up ~10MB of heap per screenshot.
-  * Attached `SupervisorJob` to `FloatingControlOverlay` coroutine scope with clean cancellation on overlay dismiss, preventing background coroutine leaks.
-  * Guarded `stopForeground()` in `exitService()` to only fire when the service is actively in foreground mode.
-
-* **🔒 Scoped Storage & Security Enhancements**:
-  * Fixed `IllegalArgumentException` on devices where `DATA` and `RESOLUTION` MediaStore columns return `-1` index by using safe column checks in `VideoHelper`.
-  * Resticted `RECORDING_SAVED` broadcast in `AdbRecordService` using explicit package targeting (`setPackage(packageName)`), preventing broadcast leaks on Android 13+.
-  * Upgraded ADB X.509 certificate serial number generator to use `SecureRandom` in compliance with RFC 5280.
-  * Corrected `isMicMuted` UI state in floating controls to directly track service status rather than optimistic flips.
+### 📱 Responsive Wide Screen, Tablet & Foldable Experience
+* **Adaptive Multi-Column Layout**:
+  * Automatically activates dual-column dashboard layout on landscape mode and unfolded foldable displays (`screenWidthDp >= 600`), such as Samsung Galaxy Z Fold, Google Pixel Fold, and OnePlus Open.
+  * Constrained maximum content widths (`1200.dp` for multi-column dashboards, `600.dp` for single-column portrait, `768.dp` for Settings, and `900.dp` for Video Trimmer) to provide a clean, modern interface on wide screens, tablets, and Chromebooks.
+* **Adaptive Gallery Grid**:
+  * Dynamic grid scaling (`GridCells.Adaptive(160.dp)`) gracefully renders 2 columns on phones, 3–4 columns on foldables, and 5–6 columns on tablets.
+* **Optimized Dialogs & Bottom Sheets**:
+  * All bottom sheets (Update Dialog, ADB Pairing Sheet, ADB Limitations Sheet) and option dialogs are now width-constrained (`440.dp` – `640.dp`) and center-aligned.
+  * Added vertical scrolling to option selection dialogs to prevent clipping in split-screen, fold, or landscape modes.
 
 ---
 
 ## 📦 Artifact Details
 * **File**: `app-release.apk`
-* **Version**: `v1.4.1` (Build `6`)
+* **Version**: `v1.5.0` (Build `8`)
 * **Package**: `com.gxdevs.screenx`
 * **Target SDK**: `37` (Android 15 ready)
 * **Min SDK**: `26` (Android 8.0+)
