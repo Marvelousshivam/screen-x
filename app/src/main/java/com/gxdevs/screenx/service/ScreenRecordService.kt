@@ -404,27 +404,42 @@ class ScreenRecordService : LifecycleService() {
             return
         }
 
-        // Start Foreground immediately for Android 14 requirements.
-        // BUG-2 FIX: Guard against double-startForeground() crash on Android 14+ when floating
-        // controls are already active (promoted as SPECIAL_USE). Re-calling startForeground() with
-        // a different type throws ForegroundServiceTypeNotAllowedException on API 34+.
+        // Start Foreground with MEDIA_PROJECTION immediately for Android 14+ requirements.
+        // Even if the service was already running as SPECIAL_USE for floating controls,
+        // it must be updated to FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION before getMediaProjection().
         val initialNotification = createNotification("Starting countdown...")
-        if (!isForeground) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                var type = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                        type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                    }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            var type = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                 }
-                startForeground(NOTIFICATION_ID, initialNotification, type)
-            } else {
-                startForeground(NOTIFICATION_ID, initialNotification)
             }
-            isForeground = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // Combine SPECIAL_USE so floating controls overlay remains valid alongside media projection
+                type = type or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            }
+            try {
+                startForeground(NOTIFICATION_ID, initialNotification, type)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed startForeground with type $type, retrying fallback", e)
+                try {
+                    val fallbackType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                        androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                    } else {
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+                    }
+                    startForeground(NOTIFICATION_ID, initialNotification, fallbackType)
+                } catch (e2: Exception) {
+                    Log.e(TAG, "Fallback startForeground failed", e2)
+                    startForeground(NOTIFICATION_ID, initialNotification)
+                }
+            }
         } else {
-            updateNotification("Starting countdown...")
+            startForeground(NOTIFICATION_ID, initialNotification)
         }
+        isForeground = true
 
         lifecycleScope.launch {
             val countdownSecs = settingsManager.countdownFlow.first()
@@ -481,14 +496,21 @@ class ScreenRecordService : LifecycleService() {
                 // Get projection
                 mediaProjection = projectionManager.getMediaProjection(resultCode, resultData)
                 
-                // Set callbacks
+                // Set callbacks (with Android 14+ / Android 16-17 resize & visibility handlers)
                 mediaProjection?.registerCallback(object : MediaProjection.Callback() {
                     override fun onStop() {
-                        stopRecording()
+                        Log.i(TAG, "MediaProjection stopped by system (status bar chip / screen lock / permission revoke)")
+                        stopRecording(reason = "Screen recording ended by system")
+                    }
+                    override fun onCapturedContentResize(width: Int, height: Int) {
+                        Log.d(TAG, "Captured content resized: ${width}x${height}")
+                    }
+                    override fun onCapturedContentVisibilityChanged(isVisible: Boolean) {
+                        Log.d(TAG, "Captured content visibility changed: $isVisible")
                     }
                 }, Handler(Looper.getMainLooper()))
 
-                // Start audio capturing helper for all active audio modes (Mic, System, MicSystem)
+                // Initialize audio capture helper for active audio modes (Mic, System, MicSystem)
                 if (audioSource == "Mic" || audioSource == "System" || audioSource == "MicSystem") {
                     tempAudioFile = File(cacheDir, "temp_audio_$sessionTime.m4a")
                     if (tempAudioFile?.exists() == true) {
@@ -499,7 +521,6 @@ class ScreenRecordService : LifecycleService() {
                     val intVolPercent = settingsManager.internalAudioVolumeFlow.first()
                     val vocalClarity = settingsManager.vocalClarityFlow.first()
 
-                    // BUG-19 FIX: Allow full 0.1x - 6.0x range without coercing minimum to 0.5x
                     val micGain = (micVolPercent.toFloat() / 100f).coerceIn(0.1f, 6.0f)
                     val intRatio = (intVolPercent.toFloat() / 100f).coerceIn(0.01f, 1.0f)
 
@@ -513,19 +534,23 @@ class ScreenRecordService : LifecycleService() {
                         internalAudioVolumeRatio = intRatio,
                         vocalClarityEnabled = vocalClarity
                     )
-                    audioCaptureHelper?.start()
                 } else {
                     tempAudioFile = null
                     audioCaptureHelper = null
                 }
 
-                // Metrics
-                // BUG-17 FIX: Use currentWindowMetrics on API 30+ (getRealMetrics deprecated)
+                // Metrics: Use maximumWindowMetrics on API 30+ to capture full screen even in multi-window/split-screen
                 val screenWidth: Int
                 val screenHeight: Int
                 val screenDensityDpi: Int
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    val bounds = windowManager.currentWindowMetrics.bounds
+                    val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
+                    val currBounds = windowManager.currentWindowMetrics.bounds
+                    val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
+                        maxBounds
+                    } else {
+                        currBounds
+                    }
                     screenWidth = bounds.width()
                     screenHeight = bounds.height()
                     screenDensityDpi = resources.configuration.densityDpi
@@ -542,20 +567,22 @@ class ScreenRecordService : LifecycleService() {
                 val recordWidth = dimensions.first
                 val recordHeight = dimensions.second
 
-                // Virtual Display
+                // Virtual Display: VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR ensures continuous hardware compositor mirroring,
+                // fixing stuttering and dropped frames on Realme UI (Realme 5 Pro / Q) and MIUI (Redmi Note 8 Pro).
                 virtualDisplay = mediaProjection?.createVirtualDisplay(
                     "ScreenXDisplay",
                     recordWidth,
                     recordHeight,
                     screenDensityDpi,
-                    DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     mediaRecorder?.surface,
                     null,
                     null
                 )
 
-                // Start recording
+                // Start hardware video recorder and audio capture synchronously to prevent A/V timestamp offset
                 mediaRecorder?.start()
+                audioCaptureHelper?.start()
                 isRecording = true
                 isPaused = false
                 isMicMuted = (audioSource == "System")
@@ -644,11 +671,17 @@ class ScreenRecordService : LifecycleService() {
             // Set paths
             setOutputFile(tempVideoFile?.absolutePath)
 
-            // Setup dimensions (BUG-17 FIX: use currentWindowMetrics on API 30+)
+            // Setup dimensions (use maximumWindowMetrics on API 30+ to prevent window-bound clipping)
             val setupWidth: Int
             val setupHeight: Int
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val bounds = windowManager.currentWindowMetrics.bounds
+                val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
+                val currBounds = windowManager.currentWindowMetrics.bounds
+                val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
+                    maxBounds
+                } else {
+                    currBounds
+                }
                 setupWidth = bounds.width()
                 setupHeight = bounds.height()
             } else {
@@ -661,10 +694,24 @@ class ScreenRecordService : LifecycleService() {
             val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
             setVideoSize(dimensions.first, dimensions.second)
 
+            val safeFps = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeFpsForResolution(dimensions.first, dimensions.second, fps)
+            val safeBitrate = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeBitrate(bitrate)
+
             // Setup Encoders
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-            setVideoEncodingBitRate(bitrate)
-            setVideoFrameRate(fps)
+            setVideoEncodingBitRate(safeBitrate)
+            setVideoFrameRate(safeFps)
+
+            // Optimize AVC Profile & Level: AVCProfileBaseline guarantees no B-frames and strictly monotonic PTS
+            try {
+                val profileLevel = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getOptimalAvcProfileLevel()
+                if (profileLevel != null) {
+                    setVideoEncodingProfileLevel(profileLevel.first, profileLevel.second)
+                    Log.d(TAG, "Applied AVC profile ${profileLevel.first}, level ${profileLevel.second}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not set video encoding profile/level: ${e.message}")
+            }
 
             setOnInfoListener { _, what, _ ->
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
@@ -683,10 +730,7 @@ class ScreenRecordService : LifecycleService() {
 
     private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
         if (resolutionSetting == "Original") {
-            // Must be even
-            val w = if (screenWidth % 2 == 0) screenWidth else screenWidth - 1
-            val h = if (screenHeight % 2 == 0) screenHeight else screenHeight - 1
-            return Pair(w, h)
+            return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(screenWidth, screenHeight)
         }
 
         val isLandscape = when (orientationSetting) {
@@ -705,19 +749,19 @@ class ScreenRecordService : LifecycleService() {
 
         val targetW: Int
         val targetH: Int
+        val minDim = minOf(screenWidth, screenHeight).toFloat()
+        val maxDim = maxOf(screenWidth, screenHeight).toFloat()
+        val aspectRatio = if (maxDim > 0) minDim / maxDim else 0.5625f
+
         if (isLandscape) {
             targetW = longSide
-            val aspectRatio = minOf(screenWidth, screenHeight).toFloat() / maxOf(screenWidth, screenHeight).toFloat()
             targetH = (longSide * aspectRatio).toInt()
         } else {
             targetH = longSide
-            val aspectRatio = minOf(screenWidth, screenHeight).toFloat() / maxOf(screenWidth, screenHeight).toFloat()
             targetW = (longSide * aspectRatio).toInt()
         }
 
-        val finalW = if (targetW % 2 == 0) targetW else targetW - 1
-        val finalH = if (targetH % 2 == 0) targetH else targetH - 1
-        return Pair(finalW, finalH)
+        return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(targetW, targetH)
     }
 
     private fun pauseRecording() {
@@ -823,14 +867,21 @@ class ScreenRecordService : LifecycleService() {
         isSaving = true
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // STEP 1: Stop and flush AudioCaptureHelper first so AudioRecord cleanly unbinds from AudioFlinger
+                // STEP 1: Detach VirtualDisplay surface first to halt incoming frames into MediaRecorder surface
+                try {
+                    currentVirtualDisplay?.surface = null
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error clearing virtual display surface", e)
+                }
+
+                // STEP 2: Stop and flush AudioCaptureHelper first so AudioRecord cleanly unbinds from AudioFlinger
                 try {
                     currentAudioHelper?.stop()
                 } catch (e: Exception) {
                     Log.e(TAG, "Error stopping audio helper", e)
                 }
 
-                // STEP 2: Stop Video MediaRecorder
+                // STEP 3: Stop Video MediaRecorder cleanly without incoming frame buffer collisions
                 try {
                     currentMediaRecorder?.apply {
                         stop()
@@ -840,14 +891,14 @@ class ScreenRecordService : LifecycleService() {
                     Log.e(TAG, "Error stopping media recorder", e)
                 }
 
-                // STEP 3: Release VirtualDisplay surface
+                // STEP 4: Release VirtualDisplay
                 try {
                     currentVirtualDisplay?.release()
                 } catch (e: Exception) {
                     Log.e(TAG, "Error releasing virtual display", e)
                 }
 
-                // STEP 4: ONLY stop MediaProjection after all consumers (AudioRecord + VirtualDisplay) are released!
+                // STEP 5: ONLY stop MediaProjection after all consumers (AudioRecord + VirtualDisplay) are released!
                 // Stopping MediaProjection before AudioRecord causes AudioFlinger native session leaks on OEM HALs.
                 try {
                     currentProjection?.stop()
@@ -855,7 +906,7 @@ class ScreenRecordService : LifecycleService() {
                     Log.e(TAG, "Error stopping media projection", e)
                 }
 
-                // STEP 5: Remux video and audio files if both temp video and audio exist
+                // STEP 6: Remux video and audio files if both temp video and audio exist
                 val fileToSave = if (currentTempAudio != null && currentTempAudio.exists() && currentTempAudio.length() > 0 &&
                     currentTempVideo != null && currentTempVideo.exists() && currentTempVideo.length() > 0) {
                     val mergedFile = File(cacheDir, "merged_${System.currentTimeMillis()}.mp4")
@@ -965,6 +1016,11 @@ class ScreenRecordService : LifecycleService() {
             var lastVideoPts = -1L
             var lastAudioPts = -1L
 
+            // Baseline PTS offset: normalize output to start at 0 while strictly preserving relative sync
+            val firstVideoTime = if (extractorVideo.sampleTime >= 0) extractorVideo.sampleTime else 0L
+            val firstAudioTime = if (extractorAudio.sampleTime >= 0) extractorAudio.sampleTime else 0L
+            val basePtsOffset = minOf(firstVideoTime, firstAudioTime)
+
             while (!videoDone || !audioDone) {
                 val videoTime = if (!videoDone) extractorVideo.sampleTime else Long.MAX_VALUE
                 val audioTime = if (!audioDone) extractorAudio.sampleTime else Long.MAX_VALUE
@@ -976,8 +1032,10 @@ class ScreenRecordService : LifecycleService() {
                     if (bufferInfo.size < 0) {
                         videoDone = true
                     } else {
-                        var pts = maxOf(0L, videoTime)
-                        if (pts <= lastVideoPts) pts = lastVideoPts + 1000L
+                        var pts = maxOf(0L, videoTime - basePtsOffset)
+                        if (pts <= lastVideoPts) {
+                            pts = lastVideoPts + 1000L
+                        }
                         lastVideoPts = pts
                         bufferInfo.presentationTimeUs = pts
                         bufferInfo.flags = extractorVideo.sampleFlags
@@ -995,8 +1053,10 @@ class ScreenRecordService : LifecycleService() {
                     if (bufferInfo.size < 0) {
                         audioDone = true
                     } else {
-                        var pts = maxOf(0L, audioTime)
-                        if (pts <= lastAudioPts) pts = lastAudioPts + 1000L
+                        var pts = maxOf(0L, audioTime - basePtsOffset)
+                        if (pts <= lastAudioPts) {
+                            pts = lastAudioPts + 1000L
+                        }
                         lastAudioPts = pts
                         bufferInfo.presentationTimeUs = pts
                         bufferInfo.flags = extractorAudio.sampleFlags

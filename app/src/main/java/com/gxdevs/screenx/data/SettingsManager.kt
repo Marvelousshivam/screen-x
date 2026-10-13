@@ -49,15 +49,15 @@ class SettingsManager(private val context: Context) {
     }
 
     val fpsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_FPS] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getMaxSupportedFps(context)
+        preferences[KEY_FPS] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDefaultFps(context)
     }
 
     val resolutionFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_RESOLUTION] ?: "Original"
+        preferences[KEY_RESOLUTION] ?: "1080p"
     }
 
     val bitrateFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_BITRATE] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getMaxSupportedBitrate().coerceAtMost(25000000)
+        preferences[KEY_BITRATE] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDefaultBitrate()
     }
 
     val audioSourceFlow: Flow<String> = context.dataStore.data.map { preferences ->
