@@ -332,9 +332,11 @@ class ScreenRecordService : LifecycleService() {
         orientationListener = object : OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
             override fun onOrientationChanged(orientation: Int) {
                 if (orientation == ORIENTATION_UNKNOWN) return
-                if ((orientation in 60..120) || (orientation in 240..300)) {
+                val landscape = (orientation in 45..135) || (orientation in 225..315)
+                val portrait = (orientation in 0..44) || (orientation in 316..359) || (orientation in 136..224)
+                if (landscape) {
                     isPhysicalLandscape = true
-                } else if ((orientation in 0..30) || (orientation in 330..359) || (orientation in 150..210)) {
+                } else if (portrait) {
                     isPhysicalLandscape = false
                 }
             }

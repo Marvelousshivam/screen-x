@@ -221,6 +221,7 @@ class AdbRecordService : LifecycleService() {
                 dir.mkdirs()
 
                 // Calculate display metrics for --size to prevent resolution mismatch on app switch
+                val orientationSetting = try { settingsManager.orientationFlow.first() } catch (_: Exception) { "Auto" }
                 val dm = getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
                 val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
                     ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this@AdbRecordService)
@@ -242,10 +243,16 @@ class AdbRecordService : LifecycleService() {
                 val dispH = if (realSize.y > 0) realSize.y else metrics.heightPixels
 
                 val rotation = display?.rotation ?: android.view.Surface.ROTATION_0
-                val isLandscape = rotation == android.view.Surface.ROTATION_90 ||
+                val isDeviceLandscape = rotation == android.view.Surface.ROTATION_90 ||
                         rotation == android.view.Surface.ROTATION_270 ||
                         resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ||
                         dispW > dispH
+
+                val isLandscape = when (orientationSetting) {
+                    "Landscape" -> true
+                    "Portrait" -> false
+                    else -> isDeviceLandscape
+                }
 
                 val minDim = minOf(dispW, dispH)
                 val maxDim = maxOf(dispW, dispH)
