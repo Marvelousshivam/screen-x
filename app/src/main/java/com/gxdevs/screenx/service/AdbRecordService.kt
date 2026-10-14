@@ -31,6 +31,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import com.gxdevs.screenx.R
+import com.gxdevs.screenx.utils.LocaleHelper
+
 /**
  * Foreground service that runs `screenrecord` via the ADB TCP connection.
  *
@@ -41,6 +44,12 @@ import java.util.Locale
  *   ACTION_STOP_ADB  → sends SIGINT to screenrecord, letting it finalize the file.
  */
 class AdbRecordService : LifecycleService() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val langCode = SettingsManager.getLanguageSync(newBase)
+        val localizedContext = LocaleHelper.applyLocale(newBase, langCode)
+        super.attachBaseContext(localizedContext)
+    }
 
     companion object {
         private const val TAG = "AdbRecordService"
@@ -64,6 +73,32 @@ class AdbRecordService : LifecycleService() {
     private lateinit var settingsManager: SettingsManager
     private var outputPath: String? = null
     @Volatile private var userStopRequested = false
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
+    private var recordingStartTimeMs: Long = 0L
+
+    @Suppress("DEPRECATION")
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            wakeLock = pm.newWakeLock(
+                android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or android.os.PowerManager.ON_AFTER_RELEASE,
+                "ScreenX:AdbWakeLock"
+            ).apply {
+                setReferenceCounted(false)
+                acquire(2 * 60 * 60 * 1000L)
+            }
+        } catch (_: Exception) {}
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+            }
+        } catch (_: Exception) {}
+        wakeLock = null
+    }
 
     private val screenOffReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -120,7 +155,13 @@ class AdbRecordService : LifecycleService() {
         userStopRequested = false
 
         try {
-            val notification = buildNotification("Stealth Recording…")
+            val showPill = kotlinx.coroutines.runBlocking { settingsManager.showStatusBarPillFlow.first() }
+            val keepAwake = kotlinx.coroutines.runBlocking { settingsManager.keepScreenAwakeFlow.first() }
+            if (keepAwake) {
+                acquireWakeLock()
+            }
+            recordingStartTimeMs = System.currentTimeMillis()
+            val notification = buildNotification(getString(R.string.tile_stealth_recording), showPill, recordingStartTimeMs)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(
                     NOTIFICATION_ID,
@@ -135,10 +176,15 @@ class AdbRecordService : LifecycleService() {
             isRecording = true
             _isRecordingFlow.value = true
             notifyTileService()
-            showToast("Recording started")
+            showToast(getString(R.string.toast_recording_started))
+
+            val notifsEnabled = androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+            if (!notifsEnabled) {
+                showToast(getString(R.string.toast_stealth_notif_fallback))
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start foreground service", e)
-            showToast("Failed to start Stealth service: ${e.message}")
+            showToast(getString(R.string.toast_stealth_start_failed, e.message ?: ""))
             finish(success = false)
             return
         }
@@ -150,20 +196,20 @@ class AdbRecordService : LifecycleService() {
                 // 1. Verify ADB is paired
                 val isPaired = settingsManager.adbPairedFlow.first()
                 if (!isPaired) {
-                    showToast("Wireless Stealth pairing is not set up. Please open ScreenX Settings to pair.")
+                    showToast(getString(R.string.home_toast_stealth_not_paired))
                     return@launch
                 }
 
                 // 2. Ensure ADB is connected (reusing port)
                 val connected = AdbManager.reconnectIfNeeded(this@AdbRecordService)
                 if (!connected) {
-                    showToast("Could not connect to Wireless ADB. Ensure Wireless Debugging is ON in Developer Options.")
+                    showToast(getString(R.string.toast_stealth_connect_failed))
                     return@launch
                 }
 
                 val mgr = AdbManager.manager
                 if (mgr == null) {
-                    showToast("Stealth recording connection is not ready. Please re-pair in Settings.")
+                    showToast(getString(R.string.toast_stealth_not_ready))
                     return@launch
                 }
 
@@ -265,15 +311,15 @@ class AdbRecordService : LifecycleService() {
                         mimeTypes,
                         null
                     )
-                    showToast("Recording stopped")
+                    showToast(getString(R.string.toast_recording_stopped))
                     notifyRecordingSaved()
                 } else {
-                    showToast("Stealth recording ended without saving video")
+                    showToast(getString(R.string.toast_stealth_no_video))
                 }
 
             } catch (e: Exception) {
                 Log.e(TAG, "Stealth recording error", e)
-                showToast("Stealth error: ${e.message ?: "Unknown error"}")
+                showToast(getString(R.string.toast_stealth_error_fmt, e.message ?: "Unknown error"))
             } finally {
                 finish(success = recordingSuccess)
             }
@@ -299,6 +345,7 @@ class AdbRecordService : LifecycleService() {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun finish(success: Boolean) {
+        releaseWakeLock()
         isRecording = false
         _isRecordingFlow.value = false
         notifyTileService()
@@ -351,7 +398,7 @@ class AdbRecordService : LifecycleService() {
         }
     }
 
-    private fun buildNotification(status: String): Notification {
+    private fun buildNotification(status: String, showPill: Boolean = true, startTimeMs: Long = System.currentTimeMillis()): Notification {
         val mainIntent = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -361,18 +408,41 @@ class AdbRecordService : LifecycleService() {
             Intent(this, AdbRecordService::class.java).apply { action = ACTION_STOP_ADB },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("ScreenX — Stealth Recording")
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.notif_title_stealth))
             .setContentText(status)
             .setSmallIcon(com.gxdevs.screenx.R.drawable.ic_notification)
             .setContentIntent(mainIntent)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopIntent)
-            .build()
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.notif_action_stop), stopIntent)
+
+        if (showPill) {
+            builder.setCategory(NotificationCompat.CATEGORY_STOPWATCH)
+            builder.setUsesChronometer(true)
+            builder.setChronometerCountDown(false)
+            builder.setWhen(startTimeMs)
+
+            try {
+                val method = builder.javaClass.getMethod("setRequestPromotedOngoing", Boolean::class.javaPrimitiveType)
+                method.invoke(builder, true)
+            } catch (_: Throwable) {}
+
+            builder.extras.apply {
+                putBoolean("android.requestPromotedOngoing", true)
+                putBoolean("android.ongoingActivityNoti.style", true)
+                putBoolean("miui.focus.notification", true)
+                putBoolean("coloros.notification.capsule", true)
+                putBoolean("oplus.notification.capsule", true)
+            }
+        }
+
+        return builder.build()
     }
 
     override fun onDestroy() {
+        releaseWakeLock()
         try {
             unregisterReceiver(screenOffReceiver)
         } catch (_: Exception) {}

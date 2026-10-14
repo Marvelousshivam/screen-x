@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     
     <!-- Foreground Service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -35,7 +37,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenX"
+        android:localeConfig="@xml/locales_config"
         tools:targetApi="31">
+
+        <!-- Samsung One UI / OEM Live Ongoing Notification Hint -->
+        <meta-data
+            android:name="android.ongoingActivityNoti.style"
+            android:value="1" />
         
         <activity
             android:name=".MainActivity"

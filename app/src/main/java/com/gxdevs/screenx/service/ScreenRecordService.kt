@@ -54,12 +54,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.gxdevs.screenx.R
+import com.gxdevs.screenx.utils.LocaleHelper
 import java.io.File
 import java.io.OutputStream
 import java.nio.ByteBuffer
 
 @Suppress("DEPRECATION")
 class ScreenRecordService : LifecycleService() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val langCode = SettingsManager.getLanguageSync(newBase)
+        val localizedContext = LocaleHelper.applyLocale(newBase, langCode)
+        super.attachBaseContext(localizedContext)
+    }
 
     companion object {
         private const val TAG = "ScreenRecordService"
@@ -128,6 +136,37 @@ class ScreenRecordService : LifecycleService() {
     private var brushDrawingOverlay: BrushDrawingOverlay? = null
     private var countdownOverlay: CountdownOverlay? = null
     private var storageMonitorJob: Job? = null
+    private var isCountingDown = false
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
+
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            wakeLock = powerManager.newWakeLock(
+                android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or android.os.PowerManager.ON_AFTER_RELEASE,
+                "ScreenX:RecordingWakeLock"
+            ).apply {
+                setReferenceCounted(false)
+                acquire(2 * 60 * 60 * 1000L) // 2-hour timeout safety
+            }
+            Log.d(TAG, "Screen WakeLock acquired")
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not acquire WakeLock: ${e.message}")
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.d(TAG, "Screen WakeLock released")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error releasing WakeLock: ${e.message}")
+        }
+        wakeLock = null
+    }
 
     private fun isHeadsetConnected(): Boolean {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
@@ -196,7 +235,7 @@ class ScreenRecordService : LifecycleService() {
                         lifecycleScope.launch {
                             val shakeToStop = settingsManager.shakeToStopFlow.first()
                             if (shakeToStop && isRecording) {
-                                Toast.makeText(this@ScreenRecordService, "Shake detected! Stopping...", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@ScreenRecordService, getString(R.string.toast_shake_detected), Toast.LENGTH_SHORT).show()
                                 stopRecording()
                             }
                         }
@@ -216,7 +255,10 @@ class ScreenRecordService : LifecycleService() {
                 lifecycleScope.launch {
                     val stopOnScreenOff = settingsManager.stopOnScreenOffFlow.first()
                     if (stopOnScreenOff) {
-                        if (isRecording) {
+                        if (isCountingDown) {
+                            Log.i(TAG, "Screen off detected during countdown — aborting countdown")
+                            cancelCountdown()
+                        } else if (isRecording) {
                             Log.i(TAG, "Screen off detected — stopping recording")
                             stopRecording(reason = "Screen turned off")
                         }
@@ -277,7 +319,13 @@ class ScreenRecordService : LifecycleService() {
             }
             ACTION_PAUSE -> pauseRecording()
             ACTION_RESUME -> resumeRecording()
-            ACTION_STOP -> stopRecording()
+            ACTION_STOP -> {
+                if (isCountingDown) {
+                    cancelCountdown()
+                } else {
+                    stopRecording()
+                }
+            }
             ACTION_SCREENSHOT -> takeScreenshot()
             ACTION_TOGGLE_MIC -> toggleMicMute()
             ACTION_EXIT -> exitService()
@@ -317,18 +365,78 @@ class ScreenRecordService : LifecycleService() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "ScreenX Recording Status"
-            val descriptionText = "Displays status and controls for active screen recording"
+            val name = getString(R.string.notif_channel_name)
+            val descriptionText = getString(R.string.notif_channel_desc)
             val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
+                setShowBadge(false)
+                setSound(null, null)
+                enableVibration(false)
             }
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    private fun createNotification(status: String): Notification {
+    private fun createCountdownNotification(remainingSeconds: Int, totalSeconds: Int, showPill: Boolean): Notification {
+        val mainIntent = Intent(this, MainActivity::class.java)
+        val pendingMainIntent = PendingIntent.getActivity(
+            this, 0, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val stopIntent = Intent(this, ScreenRecordService::class.java).apply { action = ACTION_STOP }
+        val pendingStop = PendingIntent.getService(
+            this, 10, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val title = getString(R.string.notif_countdown_title_fmt, remainingSeconds)
+        val contentText = getString(R.string.notif_countdown_sub)
+        val pillText = "${remainingSeconds}s"
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(contentText)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(pendingMainIntent)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.notif_action_cancel), pendingStop)
+
+        if (showPill) {
+            builder.setCategory(NotificationCompat.CATEGORY_STOPWATCH)
+            builder.setUsesChronometer(true)
+            builder.setChronometerCountDown(true)
+            builder.setWhen(System.currentTimeMillis() + (remainingSeconds * 1000L))
+
+            // Android 16+ Promoted Live Updates (Status Bar Chip) API
+            try {
+                val method = builder.javaClass.getMethod("setRequestPromotedOngoing", Boolean::class.javaPrimitiveType)
+                method.invoke(builder, true)
+            } catch (_: Throwable) {}
+            try {
+                val shortTextMethod = builder.javaClass.getMethod("setShortCriticalText", CharSequence::class.java)
+                shortTextMethod.invoke(builder, pillText)
+            } catch (_: Throwable) {}
+
+            // Extras for standard Android 16, Samsung One UI 7 Now Bar / Live Notifications, Xiaomi HyperOS, ColorOS/OxygenOS
+            builder.extras.apply {
+                putBoolean("android.requestPromotedOngoing", true)
+                putCharSequence("android.shortCriticalText", pillText)
+                putString("android.substName", pillText)
+                putBoolean("android.ongoingActivityNoti.style", true)
+                putBoolean("miui.focus.notification", true)
+                putBoolean("coloros.notification.capsule", true)
+                putBoolean("oplus.notification.capsule", true)
+                putInt("android.progress", remainingSeconds)
+                putInt("android.progressMax", totalSeconds)
+            }
+        }
+
+        return builder.build()
+    }
+
+    private fun createNotification(status: String, showPill: Boolean = true): Notification {
         val mainIntent = Intent(this, MainActivity::class.java)
         val pendingMainIntent = PendingIntent.getActivity(
             this, 0, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -347,24 +455,54 @@ class ScreenRecordService : LifecycleService() {
         val exitIntent = Intent(this, ScreenRecordService::class.java).apply { this.action = ACTION_EXIT }
         val pendingExit = PendingIntent.getService(this, 13, exitIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
+        val contentText = when (status) {
+            "Floating controls active" -> getString(R.string.notif_status_floating)
+            "Recording" -> getString(R.string.notif_status_recording)
+            "Paused" -> getString(R.string.notif_status_paused)
+            else -> status
+        }
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("ScreenX Recorder")
-            .setContentText(if (status == "Floating controls active") "Floating ball is active • Tap to open" else status)
+            .setContentTitle(getString(R.string.notif_title_recorder))
+            .setContentText(contentText)
             .setSmallIcon(com.gxdevs.screenx.R.drawable.ic_notification)
             .setContentIntent(pendingMainIntent)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
 
         if (status == "Recording") {
-            builder.addAction(android.R.drawable.ic_media_pause, "Pause", pendingPause)
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", pendingStop)
+            builder.addAction(android.R.drawable.ic_media_pause, getString(R.string.notif_action_pause), pendingPause)
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.notif_action_stop), pendingStop)
+
+            if (showPill) {
+                builder.setCategory(NotificationCompat.CATEGORY_STOPWATCH)
+                builder.setUsesChronometer(true)
+                builder.setChronometerCountDown(false)
+                if (recordingStartTimeMs > 0) {
+                    builder.setWhen(recordingStartTimeMs)
+                }
+
+                try {
+                    val method = builder.javaClass.getMethod("setRequestPromotedOngoing", Boolean::class.javaPrimitiveType)
+                    method.invoke(builder, true)
+                } catch (_: Throwable) {}
+
+                builder.extras.apply {
+                    putBoolean("android.requestPromotedOngoing", true)
+                    putBoolean("android.ongoingActivityNoti.style", true)
+                    putBoolean("miui.focus.notification", true)
+                    putBoolean("coloros.notification.capsule", true)
+                    putBoolean("oplus.notification.capsule", true)
+                }
+            }
         } else if (status == "Paused") {
-            builder.addAction(android.R.drawable.ic_media_play, "Resume", pendingResume)
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", pendingStop)
+            builder.addAction(android.R.drawable.ic_media_play, getString(R.string.notif_action_resume), pendingResume)
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.notif_action_stop), pendingStop)
+            builder.setUsesChronometer(false)
         }
         builder.addAction(
             android.R.drawable.ic_menu_close_clear_cancel, 
-            if (status == "Floating controls active") "Hide Ball" else "Exit", 
+            if (status == "Floating controls active") getString(R.string.notif_action_hide_ball) else getString(R.string.notif_action_exit), 
             pendingExit
         )
 
@@ -391,23 +529,45 @@ class ScreenRecordService : LifecycleService() {
 
     private fun updateNotification(status: String) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, createNotification(status))
+        lifecycleScope.launch {
+            val showPill = settingsManager.showStatusBarPillFlow.first()
+            notificationManager.notify(NOTIFICATION_ID, createNotification(status, showPill))
+        }
     }
 
-    private fun startRecordingSequence(resultCode: Int, resultData: Intent) {
-        if (isSaving) {
-            Log.w(TAG, "Previous recording is still saving. Waiting for save to finish before starting new recording...")
-            lifecycleScope.launch {
-                isSavingFlow.first { !it }
-                startRecordingSequence(resultCode, resultData)
-            }
-            return
-        }
+    private fun updateNotificationCountdown(remainingSeconds: Int, totalSeconds: Int, showPill: Boolean) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(
+            NOTIFICATION_ID,
+            createCountdownNotification(remainingSeconds, totalSeconds, showPill)
+        )
+    }
 
-        // Start Foreground with MEDIA_PROJECTION immediately for Android 14+ requirements.
-        // Even if the service was already running as SPECIAL_USE for floating controls,
-        // it must be updated to FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION before getMediaProjection().
-        val initialNotification = createNotification("Starting countdown...")
+    private fun cancelCountdown() {
+        if (!isCountingDown) return
+        isCountingDown = false
+        countdownOverlay?.dismiss()
+        countdownOverlay = null
+        releaseWakeLock()
+        lifecycleScope.launch(Dispatchers.Main) {
+            val showFloating = settingsManager.showFloatingFlow.first()
+            val mode = settingsManager.floatingShowModeFlow.first()
+            if (showFloating && mode.startsWith("All the time")) {
+                updateNotification("Floating controls active")
+            } else {
+                dismissFloatingControls()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    stopForeground(true)
+                }
+                stopSelf()
+            }
+        }
+    }
+
+    private fun startForegroundWithMediaProjection(initialNotification: Notification) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             var type = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -440,19 +600,53 @@ class ScreenRecordService : LifecycleService() {
             startForeground(NOTIFICATION_ID, initialNotification)
         }
         isForeground = true
+    }
+
+    private fun startRecordingSequence(resultCode: Int, resultData: Intent) {
+        if (isSaving) {
+            Log.w(TAG, "Previous recording is still saving. Waiting for save to finish before starting new recording...")
+            lifecycleScope.launch {
+                isSavingFlow.first { !it }
+                startRecordingSequence(resultCode, resultData)
+            }
+            return
+        }
 
         lifecycleScope.launch {
             val countdownSecs = settingsManager.countdownFlow.first()
+            val keepScreenAwake = settingsManager.keepScreenAwakeFlow.first()
+            val showPill = settingsManager.showStatusBarPillFlow.first()
+
+            if (keepScreenAwake) {
+                acquireWakeLock()
+            }
+
+            val initialNotification = if (countdownSecs > 0) {
+                createCountdownNotification(countdownSecs, countdownSecs, showPill)
+            } else {
+                createNotification("Recording", showPill)
+            }
+
+            // Start Foreground with MEDIA_PROJECTION immediately for Android 14+ requirements.
+            startForegroundWithMediaProjection(initialNotification)
+
             if (countdownSecs > 0) {
-                // Show countdown overlay
-                countdownOverlay = CountdownOverlay(this@ScreenRecordService)
+                isCountingDown = true
+                countdownOverlay = CountdownOverlay(
+                    context = this@ScreenRecordService,
+                    totalSeconds = countdownSecs,
+                    keepScreenAwake = keepScreenAwake,
+                    onTick = { remaining ->
+                        updateNotificationCountdown(remaining, countdownSecs, showPill)
+                    }
+                )
                 countdownOverlay?.show {
-                    // When countdown finishes
-                    startRecording(resultCode, resultData)
-                    countdownOverlay?.dismiss()
+                    isCountingDown = false
                     countdownOverlay = null
+                    startRecording(resultCode, resultData)
                 }
             } else {
+                isCountingDown = false
                 startRecording(resultCode, resultData)
             }
         }
@@ -480,7 +674,7 @@ class ScreenRecordService : LifecycleService() {
                         Handler(Looper.getMainLooper()).post {
                             Toast.makeText(
                                 this@ScreenRecordService,
-                                "Storage is critically low ($availableMb MB free)! At least $safeStorageThresholdMb MB required to record safely.",
+                                getString(R.string.toast_storage_critically_low_fmt, availableMb, safeStorageThresholdMb),
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -605,11 +799,11 @@ class ScreenRecordService : LifecycleService() {
                                 Handler(Looper.getMainLooper()).post {
                                     Toast.makeText(
                                         this@ScreenRecordService,
-                                        "Storage is almost full ($freeMb MB left)! Recording auto-stopped & finalized safely.",
+                                        getString(R.string.toast_storage_almost_full_fmt, freeMb),
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
-                                stopRecording(reason = "Storage full safeguard: Recording saved safely!")
+                                stopRecording(reason = getString(R.string.toast_storage_safeguard_reason))
                                 break
                             }
                         }
@@ -617,11 +811,18 @@ class ScreenRecordService : LifecycleService() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@ScreenRecordService, "Recording started", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ScreenRecordService, getString(R.string.toast_recording_started), Toast.LENGTH_SHORT).show()
                 }
 
-                // Show floating controls if set
-                if (showFloating) {
+                // Show floating controls if set, with fallback if notifications are disabled
+                val notifsEnabled = androidx.core.app.NotificationManagerCompat.from(this@ScreenRecordService).areNotificationsEnabled()
+                if (!notifsEnabled) {
+                    // Fallback: If notifications are disabled, ensure floating controls are active so the user can pause/stop
+                    showFloatingControls()
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(this@ScreenRecordService, getString(R.string.toast_notif_permission_fallback), Toast.LENGTH_LONG).show()
+                    }
+                } else if (showFloating) {
                     showFloatingControls()
                     val hideDuringRecord = settingsManager.hideDuringRecordFlow.first()
                     if (hideDuringRecord) {
@@ -641,7 +842,7 @@ class ScreenRecordService : LifecycleService() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Handler(Looper.getMainLooper()).post {
-                    Toast.makeText(this@ScreenRecordService, "Failed to start recording: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@ScreenRecordService, getString(R.string.toast_record_start_failed_fmt, e.message ?: ""), Toast.LENGTH_LONG).show()
                 }
                 isRecording = false
                 stopSelf()
@@ -800,7 +1001,7 @@ class ScreenRecordService : LifecycleService() {
     fun toggleMicMute(): Boolean {
         if (audioCaptureHelper == null || audioCaptureHelper?.hasMic() != true) {
             Handler(Looper.getMainLooper()).post {
-                Toast.makeText(this, "Microphone is not active in this recording mode", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.toast_mic_not_active), Toast.LENGTH_SHORT).show()
             }
             return isMicMuted
         }
@@ -808,7 +1009,7 @@ class ScreenRecordService : LifecycleService() {
         isMicMuted = newMute
         audioCaptureHelper?.setMicMuted(newMute)
         floatingControlOverlay?.updateState()
-        val msg = if (newMute) "Microphone muted" else "Microphone unmuted"
+        val msg = if (newMute) getString(R.string.toast_mic_muted) else getString(R.string.toast_mic_unmuted)
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         }
@@ -820,6 +1021,7 @@ class ScreenRecordService : LifecycleService() {
         val wasPaused = isPaused
         isRecording = false
         isPaused = false
+        releaseWakeLock()
         storageMonitorJob?.cancel()
         storageMonitorJob = null
         try {
@@ -936,7 +1138,7 @@ class ScreenRecordService : LifecycleService() {
                             if (reason != null) {
                                 Toast.makeText(this@ScreenRecordService, reason, Toast.LENGTH_LONG).show()
                             } else {
-                                Toast.makeText(this@ScreenRecordService, "Recording stopped", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@ScreenRecordService, getString(R.string.toast_recording_stopped), Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
@@ -1232,7 +1434,7 @@ class ScreenRecordService : LifecycleService() {
                     setPackage(packageName)
                 })
                 Handler(Looper.getMainLooper()).post {
-                    Toast.makeText(this@ScreenRecordService, "Screenshot saved to Pictures/ScreenX", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ScreenRecordService, getString(R.string.toast_screenshot_saved), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -1302,6 +1504,8 @@ class ScreenRecordService : LifecycleService() {
     }
 
     private fun exitService() {
+        cancelCountdown()
+        releaseWakeLock()
         storageMonitorJob?.cancel()
         storageMonitorJob = null
         if (isRecording) {
@@ -1318,6 +1522,8 @@ class ScreenRecordService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        cancelCountdown()
+        releaseWakeLock()
         try {
             unregisterReceiver(screenOffReceiver)
         } catch (_: Exception) {}

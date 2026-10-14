@@ -19,12 +19,20 @@ import com.gxdevs.screenx.data.SettingsManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
+import com.gxdevs.screenx.R
+import com.gxdevs.screenx.utils.LocaleHelper
 
 /**
  * Transparent helper activity launched from the Quick Settings tile
  * to request screen recording and overlay permissions without showing the main app UI.
  */
 class TileHelperActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val langCode = SettingsManager.getLanguageSync(newBase)
+        val localizedContext = LocaleHelper.applyLocale(newBase, langCode)
+        super.attachBaseContext(localizedContext)
+    }
 
     private lateinit var settingsManager: SettingsManager
     private lateinit var projectionManager: MediaProjectionManager
@@ -35,7 +43,7 @@ class TileHelperActivity : ComponentActivity() {
         if (Settings.canDrawOverlays(this)) {
             checkPermissionsAndStartProjection()
         } else {
-            Toast.makeText(this, "Overlay permission required", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_overlay_required), Toast.LENGTH_SHORT).show()
             finish()
         }
     }
@@ -52,10 +60,17 @@ class TileHelperActivity : ComponentActivity() {
             permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: true
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notifGranted = permissions[Manifest.permission.POST_NOTIFICATIONS]
+            if (notifGranted == false) {
+                Toast.makeText(this, getString(R.string.toast_notif_denied_warning), Toast.LENGTH_LONG).show()
+            }
+        }
+
         if (recordAudioGranted && storageGranted) {
             startScreenCaptureIntent()
         } else {
-            Toast.makeText(this, "Required permissions denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
             finish()
         }
     }
@@ -66,7 +81,7 @@ class TileHelperActivity : ComponentActivity() {
         if (result.resultCode == RESULT_OK && result.data != null) {
             startRecordingService(result.resultCode, result.data!!)
         } else {
-            Toast.makeText(this, "Screen capture permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
         }
         finish()
     }
@@ -102,7 +117,7 @@ class TileHelperActivity : ComponentActivity() {
                 if (!isAdbPaired) {
                     Toast.makeText(
                         this@TileHelperActivity,
-                        "Wireless ADB is not paired. Please open ScreenX to pair.",
+                        getString(R.string.home_toast_stealth_not_paired),
                         Toast.LENGTH_LONG
                     ).show()
                     val appIntent = Intent(this@TileHelperActivity, com.gxdevs.screenx.MainActivity::class.java).apply {
@@ -130,7 +145,7 @@ class TileHelperActivity : ComponentActivity() {
 
             val showFloating = settingsManager.showFloatingFlow.first()
             if (showFloating && !Settings.canDrawOverlays(this@TileHelperActivity)) {
-                Toast.makeText(this@TileHelperActivity, "Please enable 'Display over other apps'", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@TileHelperActivity, getString(R.string.toast_allow_overlay), Toast.LENGTH_LONG).show()
                 val intent = Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     "package:$packageName".toUri()
