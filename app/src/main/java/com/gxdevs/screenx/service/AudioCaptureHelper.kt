@@ -139,7 +139,7 @@ class AudioCaptureHelper(
                         Handler(Looper.getMainLooper()).post {
                             Toast.makeText(
                                 context,
-                                "Microphone could not be initialized — check app permissions.",
+                                context.getString(com.gxdevs.screenx.R.string.toast_mic_init_failed),
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -160,7 +160,7 @@ class AudioCaptureHelper(
                     Handler(Looper.getMainLooper()).post {
                         Toast.makeText(
                             context,
-                            "Internal audio capture requires Android 10 or newer.",
+                            context.getString(com.gxdevs.screenx.R.string.toast_internal_audio_android10),
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -194,7 +194,7 @@ class AudioCaptureHelper(
                         Handler(Looper.getMainLooper()).post {
                             Toast.makeText(
                                 context,
-                                "Microphone unavailable — recording internal audio only.",
+                                context.getString(com.gxdevs.screenx.R.string.toast_mic_unavailable_internal_only),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }

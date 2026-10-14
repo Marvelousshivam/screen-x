@@ -26,6 +26,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -135,7 +136,7 @@ fun UpdateDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "ScreenX Update",
+                            text = stringResource(R.string.update_dialog_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -159,7 +160,7 @@ fun UpdateDialog(
                     Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
-                        text = "Current: v${updateInfo.currentVersion} • GitHub Release",
+                        text = stringResource(R.string.update_dialog_current_fmt, updateInfo.currentVersion),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -234,7 +235,7 @@ fun UpdateDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Download ScreenX Update (APK)",
+                        text = stringResource(R.string.update_dialog_download_btn),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
@@ -266,7 +267,7 @@ fun UpdateDialog(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "View on GitHub",
+                            text = stringResource(R.string.update_dialog_github_btn),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -280,7 +281,7 @@ fun UpdateDialog(
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text(
-                            text = "Later",
+                            text = stringResource(R.string.update_dialog_later_btn),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -14,6 +14,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+import android.content.Context
+import com.gxdevs.screenx.utils.LocaleHelper
+
 /**
  * Quick Settings tile for ScreenX.
  * - Aware of both standard MediaProjection and wireless ADB recording.
@@ -22,6 +25,12 @@ import kotlinx.coroutines.launch
  *   Otherwise opens TileHelperActivity to prompt for MediaProjection.
  */
 class ScreenXTileService : TileService() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val langCode = SettingsManager.getLanguageSync(newBase)
+        val localizedContext = LocaleHelper.applyLocale(newBase, langCode)
+        super.attachBaseContext(localizedContext)
+    }
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -137,15 +146,21 @@ class ScreenXTileService : TileService() {
 
         if (isStandard || isAdb) {
             tile.state = Tile.STATE_ACTIVE
-            tile.label = if (isAdb) "Stop Stealth Record" else "Stop Recording"
+            tile.label = if (isAdb) getString(R.string.tile_stop_stealth) else getString(R.string.tile_stop_recording)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = if (isAdb) "Stealth Recording…" else if (ScreenRecordService.isPaused) "Paused" else "Recording…"
+                tile.subtitle = if (isAdb) {
+                    getString(R.string.tile_stealth_recording)
+                } else if (ScreenRecordService.isPaused) {
+                    getString(R.string.notif_status_paused)
+                } else {
+                    getString(R.string.notif_status_recording)
+                }
             }
         } else {
             tile.state = Tile.STATE_INACTIVE
-            tile.label = "ScreenX"
+            tile.label = getString(R.string.app_name)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = "Tap to record"
+                tile.subtitle = getString(R.string.home_tap_to_start)
             }
         }
         tile.updateTile()

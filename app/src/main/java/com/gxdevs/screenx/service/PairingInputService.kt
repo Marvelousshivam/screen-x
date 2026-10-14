@@ -18,6 +18,9 @@ import com.gxdevs.screenx.MainActivity
 import com.gxdevs.screenx.data.AdbManager
 import com.gxdevs.screenx.data.AdbMdns
 import com.gxdevs.screenx.data.SettingsManager
+import android.content.Context
+import com.gxdevs.screenx.R
+import com.gxdevs.screenx.utils.LocaleHelper
 import kotlinx.coroutines.*
 
 /**
@@ -28,6 +31,12 @@ import kotlinx.coroutines.*
  *  - Automatically connects via TLS once paired
  */
 class PairingInputService : Service() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val langCode = SettingsManager.getLanguageSync(newBase)
+        val localizedContext = LocaleHelper.applyLocale(newBase, langCode)
+        super.attachBaseContext(localizedContext)
+    }
 
     private enum class State { WAITING_FOR_PORT, READY, PAIRING, FAILED }
 
@@ -130,10 +139,10 @@ class PairingInputService : Service() {
             result.onSuccess {
                 SettingsManager(this@PairingInputService).setAdbPaired(true)
                 showResultNotification(
-                    title = "ScreenX Stealth Paired Successfully!",
-                    text = "Tap to open ScreenX. Stealth Recording is now ready."
+                    title = getString(R.string.adb_pairing_notif_success_title),
+                    text = getString(R.string.adb_pairing_notif_success_sub)
                 )
-                Toast.makeText(this@PairingInputService, "ScreenX Paired Successfully!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@PairingInputService, getString(R.string.adb_pairing_notif_success_toast), Toast.LENGTH_LONG).show()
 
                 // Try connecting in background
                 AdbManager.connect(this@PairingInputService, 0, effectiveHost.ifEmpty { null })
@@ -141,7 +150,7 @@ class PairingInputService : Service() {
                 returnToApp()
                 stopSelf()
             }.onFailure { error ->
-                val message = error.message ?: "Pairing failed."
+                val message = error.message ?: getString(R.string.adb_err_connect_failed)
                 Log.w(TAG, "Pairing failed: $message", error)
                 state = State.FAILED
                 failureMessage = message
@@ -169,17 +178,17 @@ class PairingInputService : Service() {
 
     private fun buildNotification(): Notification {
         val title = when (state) {
-            State.WAITING_FOR_PORT -> "ScreenX: Waiting for Pairing Dialog"
-            State.READY -> "ScreenX: Enter Pairing Code"
-            State.PAIRING -> "ScreenX: Pairing with Device…"
-            State.FAILED -> "ScreenX: Pairing Failed"
+            State.WAITING_FOR_PORT -> getString(R.string.adb_pairing_notif_waiting_title)
+            State.READY -> getString(R.string.adb_pairing_notif_ready_title)
+            State.PAIRING -> getString(R.string.adb_pairing_notif_pairing_title)
+            State.FAILED -> getString(R.string.adb_pairing_notif_failed_title)
         }
 
         val summary = when (state) {
-            State.WAITING_FOR_PORT -> "In Developer Options, tap \"Pair device with pairing code\""
-            State.READY -> "Found port $pairingPort. Tap Reply and enter the 6-digit code shown on screen."
-            State.PAIRING -> "Authenticating with wireless debugging daemon…"
-            State.FAILED -> failureMessage ?: "Pairing failed. Tap Retry with a fresh code."
+            State.WAITING_FOR_PORT -> getString(R.string.adb_pairing_notif_waiting_sub)
+            State.READY -> getString(R.string.adb_pairing_notif_ready_sub_fmt, pairingPort)
+            State.PAIRING -> getString(R.string.adb_pairing_notif_pairing_sub)
+            State.FAILED -> failureMessage ?: getString(R.string.adb_pairing_notif_failed_sub)
         }
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -193,13 +202,13 @@ class PairingInputService : Service() {
             .setOngoing(state == State.PAIRING)
             .addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                "Cancel",
+                getString(R.string.cancel),
                 cancelPendingIntent()
             )
 
         if (state == State.READY || state == State.FAILED) {
             val remoteInput = RemoteInput.Builder(KEY_PAIRING_INPUT)
-                .setLabel("6-digit code")
+                .setLabel(getString(R.string.adb_pairing_code_label_short))
                 .build()
 
             val replyIntent = Intent(this, PairingInputReceiver::class.java).apply {
@@ -218,7 +227,7 @@ class PairingInputService : Service() {
             builder.addAction(
                 NotificationCompat.Action.Builder(
                     android.R.drawable.ic_input_add,
-                    if (state == State.FAILED) "Retry" else "Reply",
+                    if (state == State.FAILED) getString(R.string.retry) else getString(R.string.reply),
                     replyPendingIntent
                 )
                     .addRemoteInput(remoteInput)

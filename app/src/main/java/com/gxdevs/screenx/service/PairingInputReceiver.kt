@@ -29,7 +29,7 @@ class PairingInputReceiver : BroadcastReceiver() {
             .orEmpty()
 
         if (input.isEmpty()) {
-            Toast.makeText(context, "Enter the 6-digit pairing code", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(com.gxdevs.screenx.R.string.adb_err_invalid_code), Toast.LENGTH_SHORT).show()
             return
         }
 

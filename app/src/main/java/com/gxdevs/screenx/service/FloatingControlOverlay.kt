@@ -453,18 +453,27 @@ class FloatingControlOverlay(private val context: Context) {
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                             )
                         }
-                    } else {
-                        val icon = when {
-                            inDismiss   -> Icons.Outlined.Delete
-                            isExpanded  -> if (isOnLeftEdge) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight
-                            isRecording -> Icons.Outlined.FiberManualRecord
-                            else        -> Icons.Outlined.Videocam
-                        }
+                    } else if (inDismiss) {
                         Icon(
-                            imageVector        = icon,
-                            contentDescription = if (isExpanded) "Collapse floating menu" else "Expand floating menu",
+                            imageVector        = Icons.Outlined.Delete,
+                            contentDescription = "Dismiss floating controls",
                             tint               = Color.White,
-                            modifier           = Modifier.size(16.dp).padding(horizontal = 4.dp)
+                            modifier           = Modifier.size(16.dp)
+                        )
+                    } else if (isExpanded) {
+                        Icon(
+                            imageVector        = if (isOnLeftEdge) Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,
+                            contentDescription = "Collapse floating menu",
+                            tint               = Color.White,
+                            modifier           = Modifier.size(16.dp)
+                        )
+                    } else {
+                        // Floating ball in standby: white circle only half the size of the ball
+                        Box(
+                            modifier = Modifier
+                                .size(orbSize / 2)
+                                .clip(CircleShape)
+                                .background(Color.White)
                         )
                     }
                 }
@@ -518,7 +527,18 @@ class FloatingControlOverlay(private val context: Context) {
                         } else {
                             // Standby Controls:
                             // 1. Record (respects ADB setting and handles unpaired gracefully!)
-                            GlassBtn(b1, Icons.Outlined.RadioButtonChecked, Color.White, "Start screen recording") {
+                            GlassBtn(
+                                visible = b1,
+                                contentDescription = "Start screen recording",
+                                content = {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.White)
+                                    )
+                                }
+                            ) {
                                 collapsePill()
                                 overlayScope.launch {
                                     val adbEnabled = settingsManager.adbEnabledFlow.first()
@@ -529,7 +549,7 @@ class FloatingControlOverlay(private val context: Context) {
                                             android.os.Handler(android.os.Looper.getMainLooper()).post {
                                                 Toast.makeText(
                                                     context,
-                                                    "Wireless ADB is not paired. Please open ScreenX to pair.",
+                                                    context.getString(com.gxdevs.screenx.R.string.home_toast_stealth_not_paired),
                                                     Toast.LENGTH_LONG
                                                 ).show()
                                             }
@@ -793,9 +813,10 @@ class FloatingControlOverlay(private val context: Context) {
 @Composable
 private fun GlassBtn(
     visible: Boolean,
-    icon:    ImageVector,
-    tint:    Color,
+    icon:    ImageVector? = null,
+    tint:    Color = Color.White,
     contentDescription: String? = null,
+    content: (@Composable () -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
@@ -818,6 +839,10 @@ private fun GlassBtn(
             .background(Color.White.copy(alpha = 0.10f)) // Translucent glass button
             .clickable(enabled = visible, onClick = onClick)
     ) {
-        Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(15.dp))
+        if (content != null) {
+            content()
+        } else if (icon != null) {
+            Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(15.dp))
+        }
     }
 }
