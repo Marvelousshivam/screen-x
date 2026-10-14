@@ -786,9 +786,9 @@ fun SettingsScreen(
                     OrionStackedGroupCard {
                         val appVersion = remember {
                             try {
-                                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.5.0"
+                                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.7.0"
                             } catch (_: Exception) {
-                                "1.5.0"
+                                "1.7.0"
                             }
                         }
                         OrionSettingsInfoItem(

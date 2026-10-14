@@ -1,6 +1,6 @@
-# ScreenX Release Notes — v1.6.0
+# ScreenX Release Notes — v1.7.0
 
-## 🌟 What's New in v1.6.0
+## 🌟 What's New in v1.7.0
 
 ### 🌍 Universal Multilingual Localization & Translation Parity
 * **5 Fully Supported Languages**:
@@ -53,7 +53,7 @@
 
 ## 📦 Artifact Details
 * **File**: `app-release.apk`
-* **Version**: `v1.6.0` (Build `9`)
+* **Version**: `v1.7.0` (Build `10`)
 * **Package**: `com.gxdevs.screenx`
 * **Output Path**: `app/build/outputs/apk/release/app-release.apk`
 * **Size**: `29.8 MB (29,831,488 bytes)`
