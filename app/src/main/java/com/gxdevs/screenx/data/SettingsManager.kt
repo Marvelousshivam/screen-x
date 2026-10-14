@@ -42,10 +42,30 @@ class SettingsManager(private val context: Context) {
         val KEY_ADB_PUBLIC_KEY   = stringPreferencesKey("adb_public_key")  // Base64 RSA public key
         // Stop recording when screen turns off
         val KEY_STOP_ON_SCREEN_OFF = booleanPreferencesKey("stop_on_screen_off")
+        // Keep screen awake while recording/countdown
+        val KEY_KEEP_SCREEN_AWAKE  = booleanPreferencesKey("keep_screen_awake")
+        // Live status bar pill (Android 15/16+ Promoted Live Update, One UI 7 Now Bar, HyperOS, ColorOS)
+        val KEY_SHOW_STATUS_BAR_PILL = booleanPreferencesKey("show_status_bar_pill")
         // Automatic update check on app launch
         val KEY_AUTO_CHECK_UPDATES = booleanPreferencesKey("auto_check_updates")
         // Swap primary big card and secondary stealth card on Home Screen
         val KEY_SWAP_HOME_CARDS = booleanPreferencesKey("swap_home_cards")
+        // App language code (en, es, uk, ru, hi)
+        val KEY_LANGUAGE = stringPreferencesKey("app_language")
+        private const val SYNC_PREFS_NAME = "screenx_sync_prefs"
+        private const val SYNC_KEY_LANG = "sync_language"
+
+        fun getLanguageSync(context: Context): String {
+            val prefs = context.getSharedPreferences(SYNC_PREFS_NAME, Context.MODE_PRIVATE)
+            val saved = prefs.getString(SYNC_KEY_LANG, null)
+            if (!saved.isNullOrEmpty()) return saved
+            val deviceLang = java.util.Locale.getDefault().language
+            return if (deviceLang in listOf("es", "uk", "ru", "hi")) deviceLang else "en"
+        }
+    }
+
+    val languageFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_LANGUAGE] ?: getLanguageSync(context)
     }
 
     val fpsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
@@ -92,6 +112,14 @@ class SettingsManager(private val context: Context) {
 
     val stopOnScreenOffFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[KEY_STOP_ON_SCREEN_OFF] ?: false
+    }
+
+    val keepScreenAwakeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_KEEP_SCREEN_AWAKE] ?: false
+    }
+
+    val showStatusBarPillFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_SHOW_STATUS_BAR_PILL] ?: true
     }
 
     val autoCheckUpdatesFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -318,6 +346,18 @@ class SettingsManager(private val context: Context) {
         }
     }
 
+    suspend fun setKeepScreenAwake(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_KEEP_SCREEN_AWAKE] = enabled
+        }
+    }
+
+    suspend fun setShowStatusBarPill(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_SHOW_STATUS_BAR_PILL] = enabled
+        }
+    }
+
     suspend fun setAutoCheckUpdates(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_AUTO_CHECK_UPDATES] = enabled
@@ -328,5 +368,18 @@ class SettingsManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[KEY_SWAP_HOME_CARDS] = swap
         }
+    }
+
+    suspend fun setLanguage(languageCode: String) {
+        context.getSharedPreferences(SYNC_PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(SYNC_KEY_LANG, languageCode)
+            .commit()
+
+        context.dataStore.edit { preferences ->
+            preferences[KEY_LANGUAGE] = languageCode
+        }
+
+        com.gxdevs.screenx.utils.LocaleHelper.updateSystemLocales(context, languageCode)
     }
 }
