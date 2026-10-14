@@ -141,7 +141,9 @@ class ScreenRecordService : LifecycleService() {
     private var storageMonitorJob: Job? = null
     private var isCountingDown = false
     private var wakeLock: android.os.PowerManager.WakeLock? = null
-    private var displayListener: DisplayManager.DisplayListener? = null
+    private var recordWidth: Int = 1080
+    private var recordHeight: Int = 1920
+    private var recordDensityDpi: Int = 320
 
     private fun acquireWakeLock() {
         if (wakeLock?.isHeld == true) return
@@ -294,18 +296,6 @@ class ScreenRecordService : LifecycleService() {
 
         val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
         registerReceiver(screenOffReceiver, screenOffFilter)
-
-        // Orientation monitoring: actively track display rotation and dimensions for Auto orientation
-        val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
-
-        displayListener = object : DisplayManager.DisplayListener {
-            override fun onDisplayAdded(displayId: Int) {}
-            override fun onDisplayRemoved(displayId: Int) {}
-            override fun onDisplayChanged(displayId: Int) {}
-        }
-        try {
-            dm?.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
-        } catch (_: Exception) {}
 
         lifecycleScope.launch {
             AdbRecordService.isRecordingFlow.collect {
@@ -749,19 +739,13 @@ class ScreenRecordService : LifecycleService() {
                     audioCaptureHelper = null
                 }
 
-                // Metrics: Accurately detect display dimensions and active orientation
-                val (screenWidth, screenHeight, screenDensityDpi) = getScreenDimensions(orientationSetting)
-                val dimensions = getTargetDimensions(targetResolution, screenWidth, screenHeight, orientationSetting)
-                val recordWidth = dimensions.first
-                val recordHeight = dimensions.second
-
                 // Virtual Display: VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR ensures continuous hardware compositor mirroring,
                 // fixing stuttering and dropped frames on Realme UI (Realme 5 Pro / Q) and MIUI (Redmi Note 8 Pro).
                 virtualDisplay = mediaProjection?.createVirtualDisplay(
                     "ScreenXDisplay",
                     recordWidth,
                     recordHeight,
-                    screenDensityDpi,
+                    recordDensityDpi,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     mediaRecorder?.surface,
                     null,
@@ -867,9 +851,12 @@ class ScreenRecordService : LifecycleService() {
             setOutputFile(tempVideoFile?.absolutePath)
 
             // Setup dimensions
-            val (setupWidth, setupHeight, _) = getScreenDimensions(orientationSetting)
+            val (setupWidth, setupHeight, densityDpi) = getScreenDimensions(orientationSetting)
             val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
-            setVideoSize(dimensions.first, dimensions.second)
+            recordWidth = dimensions.first
+            recordHeight = dimensions.second
+            recordDensityDpi = densityDpi
+            setVideoSize(recordWidth, recordHeight)
 
             val safeFps = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeFpsForResolution(dimensions.first, dimensions.second, fps)
             val safeBitrate = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeBitrate(bitrate)
@@ -939,8 +926,8 @@ class ScreenRecordService : LifecycleService() {
                 isDisplayDimensionsLandscape ||
                 isConfigLandscape
 
-        val minDim = minOf(rawW, rawH)
-        val maxDim = maxOf(rawW, rawH)
+        val minDim = minOf(rawW, rawH).coerceAtLeast(720)
+        val maxDim = maxOf(rawW, rawH).coerceAtLeast(1280)
 
         val isLandscape = when (orientationSetting) {
             "Landscape" -> true
@@ -957,8 +944,8 @@ class ScreenRecordService : LifecycleService() {
     }
 
     private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
-        val minDim = minOf(screenWidth, screenHeight)
-        val maxDim = maxOf(screenWidth, screenHeight)
+        val minDim = minOf(screenWidth, screenHeight).coerceAtLeast(720)
+        val maxDim = maxOf(screenWidth, screenHeight).coerceAtLeast(1280)
 
         val isLandscape = when (orientationSetting) {
             "Landscape" -> true
@@ -1549,13 +1536,6 @@ class ScreenRecordService : LifecycleService() {
     override fun onDestroy() {
         cancelCountdown()
         releaseWakeLock()
-        try {
-            displayListener?.let {
-                val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
-                dm?.unregisterDisplayListener(it)
-            }
-            displayListener = null
-        } catch (_: Exception) {}
         try {
             unregisterReceiver(screenOffReceiver)
         } catch (_: Exception) {}
