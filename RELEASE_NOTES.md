@@ -51,6 +51,14 @@
 
 ---
 
+### 🔄 Flawless Landscape & Multi-Orientation Recording Fix
+* **Resolved Portrait-Stretching in Landscape Mode**:
+  * Fixed an issue where screen recording in landscape orientation resulted in vertical/portrait stretched videos.
+  * Corrected display rotation detection by querying `display.rotation`, `Configuration.ORIENTATION_LANDSCAPE`, and dynamic window metrics instead of relying on unrotated static display bounds.
+  * Enforced orientation-aware encoder dimension negotiation and alignment (`width` as long side in landscape, `height` as long side in portrait) across standard and custom resolutions.
+
+---
+
 ## 📦 Artifact Details
 * **File**: `app-release.apk`
 * **Version**: `v1.7.0` (Build `10`)
