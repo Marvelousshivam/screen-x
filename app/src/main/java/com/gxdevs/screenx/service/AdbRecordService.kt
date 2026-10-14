@@ -128,9 +128,6 @@ class AdbRecordService : LifecycleService() {
         }
     }
 
-    private var orientationListener: android.view.OrientationEventListener? = null
-    @Volatile private var isPhysicalSensorLandscape = false
-
     override fun onCreate() {
         super.onCreate()
         settingsManager = SettingsManager(this)
@@ -138,33 +135,12 @@ class AdbRecordService : LifecycleService() {
 
         val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
         registerReceiver(screenOffReceiver, screenOffFilter)
-
-        orientationListener = object : android.view.OrientationEventListener(this, android.hardware.SensorManager.SENSOR_DELAY_NORMAL) {
-            override fun onOrientationChanged(orientation: Int) {
-                if (orientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return
-                val landscape = (orientation in 45..135) || (orientation in 225..315)
-                val portrait = (orientation in 0..44) || (orientation in 316..359) || (orientation in 136..224)
-                if (landscape) {
-                    isPhysicalSensorLandscape = true
-                } else if (portrait) {
-                    isPhysicalSensorLandscape = false
-                }
-            }
-        }
-        if (orientationListener?.canDetectOrientation() == true) {
-            orientationListener?.enable()
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
-            ACTION_START_ADB -> {
-                val callerIsLandscape = if (intent.hasExtra(ScreenRecordService.EXTRA_START_IS_LANDSCAPE)) {
-                    intent.getBooleanExtra(ScreenRecordService.EXTRA_START_IS_LANDSCAPE, false)
-                } else null
-                startAdbRecording(callerIsLandscape)
-            }
+            ACTION_START_ADB -> startAdbRecording()
             ACTION_STOP_ADB  -> stopAdbRecording()
         }
         return START_NOT_STICKY
@@ -174,7 +150,7 @@ class AdbRecordService : LifecycleService() {
 
     // ── Start ────────────────────────────────────────────────────────────────
 
-    private fun startAdbRecording(callerIsLandscape: Boolean? = null) {
+    private fun startAdbRecording() {
         if (isRecording) return
         userStopRequested = false
 
@@ -245,79 +221,20 @@ class AdbRecordService : LifecycleService() {
                 dir.mkdirs()
 
                 // Calculate display metrics for --size to prevent resolution mismatch on app switch
-                val orientationSetting = try { settingsManager.orientationFlow.first() } catch (_: Exception) { "Auto" }
-                val dm = getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
-                val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
-                    ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this@AdbRecordService)
-                val realSize = android.graphics.Point()
+                val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
                 val metrics = android.util.DisplayMetrics()
-                @Suppress("DEPRECATION")
-                if (display != null) {
-                    display.getRealSize(realSize)
-                    display.getRealMetrics(metrics)
-                } else {
-                    val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
-                    @Suppress("DEPRECATION")
-                    wm?.defaultDisplay?.getRealMetrics(metrics)
-                    realSize.x = metrics.widthPixels
-                    realSize.y = metrics.heightPixels
+                if (wm != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        val bounds = wm.maximumWindowMetrics.bounds
+                        metrics.widthPixels = bounds.width()
+                        metrics.heightPixels = bounds.height()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        wm.defaultDisplay.getRealMetrics(metrics)
+                    }
                 }
-
-                val dispW = if (realSize.x > 0) realSize.x else metrics.widthPixels
-                val dispH = if (realSize.y > 0) realSize.y else metrics.heightPixels
-
-                val rotation = display?.rotation ?: android.view.Surface.ROTATION_0
-                val isDisplayRotationLandscape = rotation == android.view.Surface.ROTATION_90 || rotation == android.view.Surface.ROTATION_270
-                val isDisplayDimensionsLandscape = dispW > dispH
-                val isConfigLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-
-                var isWindowContextLandscape = false
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    try {
-                        if (android.provider.Settings.canDrawOverlays(this@AdbRecordService) && display != null) {
-                            val winContext = createWindowContext(display, android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null)
-                            val wm = winContext.getSystemService(android.view.WindowManager::class.java)
-                            val bounds = wm.currentWindowMetrics.bounds
-                            val rot = winContext.display.rotation
-                            val cfg = winContext.resources.configuration.orientation
-                            if (rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270 ||
-                                bounds.width() > bounds.height() || cfg == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
-                                isWindowContextLandscape = true
-                            }
-                        }
-                    } catch (_: Exception) {}
-                }
-
-                val isAutoRotateOn = try {
-                    android.provider.Settings.System.getInt(
-                        contentResolver,
-                        android.provider.Settings.System.ACCELEROMETER_ROTATION,
-                        0
-                    ) == 1
-                } catch (_: Exception) { false }
-                val isSensorLandscapeActive = isAutoRotateOn && isPhysicalSensorLandscape
-                val isCallerLandscape = callerIsLandscape == true
-
-                val isDeviceLandscape = isDisplayRotationLandscape ||
-                        isDisplayDimensionsLandscape ||
-                        isConfigLandscape ||
-                        isWindowContextLandscape ||
-                        isSensorLandscapeActive ||
-                        isCallerLandscape
-
-                val isLandscape = when (orientationSetting) {
-                    "Landscape" -> true
-                    "Portrait" -> false
-                    else -> isDeviceLandscape
-                }
-
-                val minDim = minOf(dispW, dispH)
-                val maxDim = maxOf(dispW, dispH)
-                val rawW = if (isLandscape) maxDim else minDim
-                val rawH = if (isLandscape) minDim else maxDim
-                val aligned = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(rawW, rawH)
-                val width = aligned.first and 1.inv()
-                val height = aligned.second and 1.inv()
+                val width = metrics.widthPixels and 1.inv()
+                val height = metrics.heightPixels and 1.inv()
                 val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
 
                 val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
@@ -528,10 +445,6 @@ class AdbRecordService : LifecycleService() {
         releaseWakeLock()
         try {
             unregisterReceiver(screenOffReceiver)
-        } catch (_: Exception) {}
-        try {
-            orientationListener?.disable()
-            orientationListener = null
         } catch (_: Exception) {}
         super.onDestroy()
     }

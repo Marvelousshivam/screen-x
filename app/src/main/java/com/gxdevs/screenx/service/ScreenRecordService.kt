@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
-import android.graphics.Point
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.hardware.Sensor
@@ -39,8 +38,6 @@ import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
-import android.view.Surface
-import android.content.res.Configuration
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -92,7 +89,6 @@ class ScreenRecordService : LifecycleService() {
         // Intent Extras
         const val EXTRA_RESULT_CODE = "extra_result_code"
         const val EXTRA_RESULT_DATA = "extra_result_data"
-        const val EXTRA_START_IS_LANDSCAPE = "extra_start_is_landscape"
 
         private val _isRecordingFlow = MutableStateFlow(false)
         val isRecordingFlow = _isRecordingFlow.asStateFlow()
@@ -125,10 +121,6 @@ class ScreenRecordService : LifecycleService() {
     private lateinit var projectionManager: MediaProjectionManager
     private lateinit var settingsManager: SettingsManager
 
-    private var orientationListener: android.view.OrientationEventListener? = null
-    @Volatile private var isPhysicalSensorLandscape = false
-    private var windowContext: Context? = null
-
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
     private var mediaRecorder: MediaRecorder? = null
@@ -146,9 +138,6 @@ class ScreenRecordService : LifecycleService() {
     private var storageMonitorJob: Job? = null
     private var isCountingDown = false
     private var wakeLock: android.os.PowerManager.WakeLock? = null
-    private var recordWidth: Int = 1080
-    private var recordHeight: Int = 1920
-    private var recordDensityDpi: Int = 320
 
     private fun acquireWakeLock() {
         if (wakeLock?.isHeld == true) return
@@ -302,22 +291,6 @@ class ScreenRecordService : LifecycleService() {
         val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
         registerReceiver(screenOffReceiver, screenOffFilter)
 
-        orientationListener = object : android.view.OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
-            override fun onOrientationChanged(orientation: Int) {
-                if (orientation == ORIENTATION_UNKNOWN) return
-                val landscape = (orientation in 45..135) || (orientation in 225..315)
-                val portrait = (orientation in 0..44) || (orientation in 316..359) || (orientation in 136..224)
-                if (landscape) {
-                    isPhysicalSensorLandscape = true
-                } else if (portrait) {
-                    isPhysicalSensorLandscape = false
-                }
-            }
-        }
-        if (orientationListener?.canDetectOrientation() == true) {
-            orientationListener?.enable()
-        }
-
         lifecycleScope.launch {
             AdbRecordService.isRecordingFlow.collect {
                 floatingControlOverlay?.updateState()
@@ -338,11 +311,8 @@ class ScreenRecordService : LifecycleService() {
                     @Suppress("DEPRECATION")
                     intent.getParcelableExtra(EXTRA_RESULT_DATA)
                 }
-                val callerIsLandscape = if (intent.hasExtra(EXTRA_START_IS_LANDSCAPE)) {
-                    intent.getBooleanExtra(EXTRA_START_IS_LANDSCAPE, false)
-                } else null
                 if (resultData != null) {
-                    startRecordingSequence(resultCode, resultData, callerIsLandscape)
+                    startRecordingSequence(resultCode, resultData)
                 } else {
                     stopSelf()
                 }
@@ -632,12 +602,12 @@ class ScreenRecordService : LifecycleService() {
         isForeground = true
     }
 
-    private fun startRecordingSequence(resultCode: Int, resultData: Intent, callerIsLandscape: Boolean? = null) {
+    private fun startRecordingSequence(resultCode: Int, resultData: Intent) {
         if (isSaving) {
             Log.w(TAG, "Previous recording is still saving. Waiting for save to finish before starting new recording...")
             lifecycleScope.launch {
                 isSavingFlow.first { !it }
-                startRecordingSequence(resultCode, resultData, callerIsLandscape)
+                startRecordingSequence(resultCode, resultData)
             }
             return
         }
@@ -670,20 +640,19 @@ class ScreenRecordService : LifecycleService() {
                         updateNotificationCountdown(remaining, countdownSecs, showPill)
                     }
                 )
-                countdownOverlay?.show { countdownDetectedLandscape ->
+                countdownOverlay?.show {
                     isCountingDown = false
                     countdownOverlay = null
-                    val finalLandscapeHint = countdownDetectedLandscape ?: callerIsLandscape
-                    startRecording(resultCode, resultData, finalLandscapeHint)
+                    startRecording(resultCode, resultData)
                 }
             } else {
                 isCountingDown = false
-                startRecording(resultCode, resultData, callerIsLandscape)
+                startRecording(resultCode, resultData)
             }
         }
     }
 
-    private fun startRecording(resultCode: Int, resultData: Intent, callerIsLandscape: Boolean? = null) {
+    private fun startRecording(resultCode: Int, resultData: Intent) {
         // Load settings and initiate hardware recording inside lifecycleScope
         lifecycleScope.launch {
             try {
@@ -716,7 +685,7 @@ class ScreenRecordService : LifecycleService() {
                 }
 
                 val sessionTime = System.currentTimeMillis()
-                setupMediaRecorder(fps, bitrate, audioSource, orientationSetting, sessionTime, callerIsLandscape)
+                setupMediaRecorder(fps, bitrate, audioSource, orientationSetting, sessionTime)
 
                 // Get projection
                 mediaProjection = projectionManager.getMediaProjection(resultCode, resultData)
@@ -764,13 +733,41 @@ class ScreenRecordService : LifecycleService() {
                     audioCaptureHelper = null
                 }
 
+                // Metrics: Use maximumWindowMetrics on API 30+ to capture full screen even in multi-window/split-screen
+                val screenWidth: Int
+                val screenHeight: Int
+                val screenDensityDpi: Int
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
+                    val currBounds = windowManager.currentWindowMetrics.bounds
+                    val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
+                        maxBounds
+                    } else {
+                        currBounds
+                    }
+                    screenWidth = bounds.width()
+                    screenHeight = bounds.height()
+                    screenDensityDpi = resources.configuration.densityDpi
+                } else {
+                    val metrics = DisplayMetrics()
+                    @Suppress("DEPRECATION")
+                    windowManager.defaultDisplay.getRealMetrics(metrics)
+                    screenWidth = metrics.widthPixels
+                    screenHeight = metrics.heightPixels
+                    screenDensityDpi = metrics.densityDpi
+                }
+                
+                val dimensions = getTargetDimensions(targetResolution, screenWidth, screenHeight, orientationSetting)
+                val recordWidth = dimensions.first
+                val recordHeight = dimensions.second
+
                 // Virtual Display: VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR ensures continuous hardware compositor mirroring,
                 // fixing stuttering and dropped frames on Realme UI (Realme 5 Pro / Q) and MIUI (Redmi Note 8 Pro).
                 virtualDisplay = mediaProjection?.createVirtualDisplay(
                     "ScreenXDisplay",
                     recordWidth,
                     recordHeight,
-                    recordDensityDpi,
+                    screenDensityDpi,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     mediaRecorder?.surface,
                     null,
@@ -853,7 +850,7 @@ class ScreenRecordService : LifecycleService() {
         }
     }
 
-    private fun setupMediaRecorder(fps: Int, bitrate: Int, audioSource: String, orientationSetting: String, sessionTime: Long, callerIsLandscape: Boolean? = null) {
+    private fun setupMediaRecorder(fps: Int, bitrate: Int, audioSource: String, orientationSetting: String, sessionTime: Long) {
         // Create temp output file
         tempVideoFile = File(cacheDir, "temp_video_$sessionTime.mp4")
         if (tempVideoFile?.exists() == true) {
@@ -875,13 +872,28 @@ class ScreenRecordService : LifecycleService() {
             // Set paths
             setOutputFile(tempVideoFile?.absolutePath)
 
-            // Setup dimensions
-            val (setupWidth, setupHeight, densityDpi) = getScreenDimensions(orientationSetting, callerIsLandscape)
+            // Setup dimensions (use maximumWindowMetrics on API 30+ to prevent window-bound clipping)
+            val setupWidth: Int
+            val setupHeight: Int
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
+                val currBounds = windowManager.currentWindowMetrics.bounds
+                val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
+                    maxBounds
+                } else {
+                    currBounds
+                }
+                setupWidth = bounds.width()
+                setupHeight = bounds.height()
+            } else {
+                val m = DisplayMetrics()
+                @Suppress("DEPRECATION")
+                windowManager.defaultDisplay.getRealMetrics(m)
+                setupWidth = m.widthPixels
+                setupHeight = m.heightPixels
+            }
             val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
-            recordWidth = dimensions.first
-            recordHeight = dimensions.second
-            recordDensityDpi = densityDpi
-            setVideoSize(recordWidth, recordHeight)
+            setVideoSize(dimensions.first, dimensions.second)
 
             val safeFps = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeFpsForResolution(dimensions.first, dimensions.second, fps)
             val safeBitrate = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeBitrate(bitrate)
@@ -917,124 +929,16 @@ class ScreenRecordService : LifecycleService() {
         }
     }
 
-    private fun getScreenDimensions(orientationSetting: String, callerIsLandscape: Boolean? = null): Triple<Int, Int, Int> {
-        val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
-        val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
-            ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this)
-
-        val realSize = Point()
-        val metrics = DisplayMetrics()
-        if (display != null) {
-            display.getRealSize(realSize)
-            display.getRealMetrics(metrics)
-        } else {
-            @Suppress("DEPRECATION")
-            windowManager.defaultDisplay.getRealMetrics(metrics)
-            realSize.x = metrics.widthPixels
-            realSize.y = metrics.heightPixels
-        }
-
-        val rawW = if (realSize.x > 0) realSize.x else metrics.widthPixels
-        val rawH = if (realSize.y > 0) realSize.y else metrics.heightPixels
-        var densityDpi = metrics.densityDpi
-        if (densityDpi <= 0) {
-            densityDpi = resources.configuration.densityDpi
-        }
-        if (densityDpi <= 0) densityDpi = 320
-
-        // 1. Android 10 legacy display check (Realme Q / Redmi Note 8 Pro)
-        val displayRotation = display?.rotation ?: Surface.ROTATION_0
-        val isDisplayRotationLandscape = displayRotation == Surface.ROTATION_90 || displayRotation == Surface.ROTATION_270
-        val isDisplayDimensionsLandscape = rawW > rawH
-        val isConfigLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-        // 2. WindowContext check (API 30+ Android 11–15+, POCO X3 Pro / POCO X4 GT)
-        var isWindowContextLandscape = false
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try {
-                val winContext = windowContext ?: if (android.provider.Settings.canDrawOverlays(this) && display != null) {
-                    createWindowContext(display, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null).also {
-                        windowContext = it
-                    }
-                } else null
-                if (winContext != null) {
-                    val wm = winContext.getSystemService(WindowManager::class.java)
-                    val bounds = wm.currentWindowMetrics.bounds
-                    val rot = winContext.display.rotation
-                    val configOrient = winContext.resources.configuration.orientation
-                    if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270 ||
-                        bounds.width() > bounds.height() ||
-                        configOrient == Configuration.ORIENTATION_LANDSCAPE) {
-                        isWindowContextLandscape = true
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "WindowContext query failed", e)
-            }
-        }
-
-        // 3. Floating Overlay View check (active window token on screen)
-        val isOverlayLandscape = floatingControlOverlay?.isOverlayLandscape() ?: false
-
-        // 4. Hardware Sensor + Auto-Rotate Setting
-        val isAutoRotateOn = try {
-            android.provider.Settings.System.getInt(
-                contentResolver,
-                android.provider.Settings.System.ACCELEROMETER_ROTATION,
-                0
-            ) == 1
-        } catch (_: Exception) {
-            false
-        }
-        val isSensorLandscapeActive = isAutoRotateOn && isPhysicalSensorLandscape
-
-        // 5. Activity/Caller Hint (passed from MainActivity or TileHelperActivity)
-        val isCallerLandscape = callerIsLandscape == true
-
-        // Multi-tier combined orientation evaluation
-        val isDeviceLandscape = isDisplayRotationLandscape ||
-                isDisplayDimensionsLandscape ||
-                isConfigLandscape ||
-                isWindowContextLandscape ||
-                isOverlayLandscape ||
-                isSensorLandscapeActive ||
-                isCallerLandscape
-
-        val minDim = minOf(rawW, rawH).coerceAtLeast(720)
-        val maxDim = maxOf(rawW, rawH).coerceAtLeast(1280)
-
-        val isLandscape = when (orientationSetting) {
-            "Landscape" -> true
-            "Portrait" -> false
-            else -> isDeviceLandscape
-        }
-
-        val screenW = if (isLandscape) maxDim else minDim
-        val screenH = if (isLandscape) minDim else maxDim
-
-        Log.d(TAG, "getScreenDimensions: setting=$orientationSetting, isLandscape=$isLandscape, w=$screenW, h=$screenH " +
-                "(legacyRot=$isDisplayRotationLandscape, legacyDims=$isDisplayDimensionsLandscape, winCtx=$isWindowContextLandscape, " +
-                "overlay=$isOverlayLandscape, sensor=$isSensorLandscapeActive (autoRot=$isAutoRotateOn), caller=$isCallerLandscape)")
-
-        return Triple(screenW, screenH, densityDpi)
-    }
-
     private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
-        val minDim = minOf(screenWidth, screenHeight).coerceAtLeast(720)
-        val maxDim = maxOf(screenWidth, screenHeight).coerceAtLeast(1280)
+        if (resolutionSetting == "Original") {
+            return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(screenWidth, screenHeight)
+        }
 
         val isLandscape = when (orientationSetting) {
-            "Landscape" -> true
             "Portrait" -> false
+            "Landscape" -> true
             else -> screenWidth > screenHeight
         }
-
-        if (resolutionSetting == "Original") {
-            val rawW = if (isLandscape) maxDim else minDim
-            val rawH = if (isLandscape) minDim else maxDim
-            return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(rawW, rawH)
-        }
-
         val longSide = when (resolutionSetting) {
             "4K" -> 3840
             "1440p" -> 2560
@@ -1044,11 +948,19 @@ class ScreenRecordService : LifecycleService() {
             else -> 1280
         }
 
-        val aspectRatio = if (maxDim > 0) minDim.toFloat() / maxDim.toFloat() else 0.5625f
-        val shortSide = (longSide * aspectRatio).toInt()
+        val targetW: Int
+        val targetH: Int
+        val minDim = minOf(screenWidth, screenHeight).toFloat()
+        val maxDim = maxOf(screenWidth, screenHeight).toFloat()
+        val aspectRatio = if (maxDim > 0) minDim / maxDim else 0.5625f
 
-        val targetW = if (isLandscape) longSide else shortSide
-        val targetH = if (isLandscape) shortSide else longSide
+        if (isLandscape) {
+            targetW = longSide
+            targetH = (longSide * aspectRatio).toInt()
+        } else {
+            targetH = longSide
+            targetW = (longSide * aspectRatio).toInt()
+        }
 
         return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(targetW, targetH)
     }
@@ -1619,10 +1531,6 @@ class ScreenRecordService : LifecycleService() {
         storageMonitorJob = null
         try {
             sensorManager?.unregisterListener(sensorListener)
-        } catch (_: Exception) {}
-        try {
-            orientationListener?.disable()
-            orientationListener = null
         } catch (_: Exception) {}
         dismissFloatingControls()
         dismissBrushOverlay()

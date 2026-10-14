@@ -51,15 +51,11 @@
 
 ---
 
-### 🔄 Universal Auto-Orientation Engine & Zero-Distortion Recording
-* **Multi-Tier Dynamic Auto-Orientation Engine**:
-  * Resolves YouTube Shorts vertical-boxing and aspect ratio distortions in Auto mode on modern Android 11–14+ devices (such as **POCO X3 Pro**, **POCO X4 GT**, Xiaomi HyperOS, MIUI) while preserving flawless backwards compatibility with Android 10 (such as **Realme Q**, **Redmi Note 8 Pro**).
-  * **Tier 1 (API 30+ WindowContext)**: Directly interfaces with WindowManager via overlay window context tokens to bypass non-window background service display isolation.
-  * **Tier 2 (Foreground Launch Handshake)**: Captures precise UI orientation and window metrics directly from initiating activities (`MainActivity` and `TileHelperActivity`) when launched over games or rotated apps.
-  * **Tier 3 (Active Window Overlays)**: Senses dynamic screen rotation updates from `CountdownOverlay` and `FloatingControlOverlay` active window views.
-  * **Tier 4 (Hardware Sensor + System Auto-Rotate)**: Seamlessly integrates real-time hardware gyroscope/accelerometer detection with Android's system `ACCELEROMETER_ROTATION` setting.
-  * **Tier 5 (Legacy Native Fallbacks)**: Maintains robust native display size and metrics queries for Android 10 and below.
-  * Guarantees 100% matched dimension negotiation between hardware video encoders (`MediaRecorder.setVideoSize`) and composited display buffers (`MediaProjection.createVirtualDisplay`).
+### 🔄 Orientation & Window Metrics Stability
+* **Restored Proven v1.6.0 Orientation & Dimension Negotiation**:
+  * Restored the battle-tested display metrics and dimension calculation engine from v1.6.0.
+  * Preserves full-screen coordinate matching across standard Android 10, MIUI, HyperOS, and ColorOS devices without vertical boxing or distortion.
+  * Guaranteed seamless auto-orientation and orientation locking in both standard and ADB recording modes.
 
 ---
 

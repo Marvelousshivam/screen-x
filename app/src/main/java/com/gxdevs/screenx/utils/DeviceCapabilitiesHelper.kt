@@ -112,14 +112,17 @@ object DeviceCapabilitiesHelper {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
             val currBounds = windowManager.currentWindowMetrics.bounds
-            val rawW = maxOf(maxBounds?.width() ?: 0, currBounds.width())
-            val rawH = maxOf(maxBounds?.height() ?: 0, currBounds.height())
-            Pair(maxOf(rawW, rawH), minOf(rawW, rawH))
+            val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
+                maxBounds
+            } else {
+                currBounds
+            }
+            Pair(bounds.width(), bounds.height())
         } else {
             val metrics = android.util.DisplayMetrics()
             @Suppress("DEPRECATION")
             windowManager.defaultDisplay.getRealMetrics(metrics)
-            Pair(maxOf(metrics.widthPixels, metrics.heightPixels), minOf(metrics.widthPixels, metrics.heightPixels))
+            Pair(metrics.widthPixels, metrics.heightPixels)
         }
     }
 
@@ -258,24 +261,11 @@ object DeviceCapabilitiesHelper {
             w = (w / effWidthAlign) * effWidthAlign
         }
 
-        // Validate against hardware encoder's absolute maximum supported dimensions.
-        // Avoid blindly clamping w to supportedWidths, because supportedWidths is a 1D range
-        // configured for portrait on many OEM HALs, which corrupts landscape recordings.
+        // Clamp to encoder's supported bounds if available
         if (videoCaps != null) {
             try {
-                if (!videoCaps.isSizeSupported(w, h)) {
-                    val maxSupportedDim = maxOf(videoCaps.supportedWidths.upper, videoCaps.supportedHeights.upper)
-                    if (w > maxSupportedDim) {
-                        w = maxSupportedDim
-                        if (w % effWidthAlign != 0 && w % 8 != 0) {
-                            w = (w / effWidthAlign) * effWidthAlign
-                        }
-                    }
-                    if (h > maxSupportedDim) {
-                        h = maxSupportedDim
-                        h = (h / effHeightAlign) * effHeightAlign
-                    }
-                }
+                w = videoCaps.supportedWidths.clamp(w)
+                h = videoCaps.supportedHeights.clamp(h)
             } catch (_: Exception) {}
         }
 
