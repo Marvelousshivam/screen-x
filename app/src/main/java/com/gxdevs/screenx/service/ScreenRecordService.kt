@@ -40,7 +40,6 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
 import android.view.Surface
-import android.view.OrientationEventListener
 import android.content.res.Configuration
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -142,8 +141,6 @@ class ScreenRecordService : LifecycleService() {
     private var storageMonitorJob: Job? = null
     private var isCountingDown = false
     private var wakeLock: android.os.PowerManager.WakeLock? = null
-    private var orientationListener: OrientationEventListener? = null
-    @Volatile private var isPhysicalLandscape: Boolean = false
     private var displayListener: DisplayManager.DisplayListener? = null
 
     private fun acquireWakeLock() {
@@ -298,52 +295,17 @@ class ScreenRecordService : LifecycleService() {
         val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
         registerReceiver(screenOffReceiver, screenOffFilter)
 
-        // Orientation monitoring: actively track physical sensor tilt & display rotation for Auto orientation
+        // Orientation monitoring: actively track display rotation and dimensions for Auto orientation
         val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
-        val initialDisplay = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
-        val initialRot = initialDisplay?.rotation ?: Surface.ROTATION_0
-        val initialPoint = Point()
-        initialDisplay?.getRealSize(initialPoint)
-        isPhysicalLandscape = (initialRot == Surface.ROTATION_90 || initialRot == Surface.ROTATION_270) ||
-                (initialPoint.x > initialPoint.y && initialPoint.y > 0) ||
-                (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
 
         displayListener = object : DisplayManager.DisplayListener {
             override fun onDisplayAdded(displayId: Int) {}
             override fun onDisplayRemoved(displayId: Int) {}
-            override fun onDisplayChanged(displayId: Int) {
-                if (displayId == android.view.Display.DEFAULT_DISPLAY) {
-                    val defaultDisplay = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
-                    val rot = defaultDisplay?.rotation ?: Surface.ROTATION_0
-                    val pt = Point()
-                    defaultDisplay?.getRealSize(pt)
-                    if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270 || (pt.x > pt.y && pt.y > 0)) {
-                        isPhysicalLandscape = true
-                    } else if (rot == Surface.ROTATION_0 || rot == Surface.ROTATION_180 || (pt.y > pt.x && pt.x > 0)) {
-                        isPhysicalLandscape = false
-                    }
-                }
-            }
+            override fun onDisplayChanged(displayId: Int) {}
         }
         try {
             dm?.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
         } catch (_: Exception) {}
-
-        orientationListener = object : OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
-            override fun onOrientationChanged(orientation: Int) {
-                if (orientation == ORIENTATION_UNKNOWN) return
-                val landscape = (orientation in 45..135) || (orientation in 225..315)
-                val portrait = (orientation in 0..44) || (orientation in 316..359) || (orientation in 136..224)
-                if (landscape) {
-                    isPhysicalLandscape = true
-                } else if (portrait) {
-                    isPhysicalLandscape = false
-                }
-            }
-        }
-        if (orientationListener?.canDetectOrientation() == true) {
-            orientationListener?.enable()
-        }
 
         lifecycleScope.launch {
             AdbRecordService.isRecordingFlow.collect {
@@ -972,12 +934,10 @@ class ScreenRecordService : LifecycleService() {
         val isDisplayRotationLandscape = displayRotation == Surface.ROTATION_90 || displayRotation == Surface.ROTATION_270
         val isDisplayDimensionsLandscape = rawW > rawH
         val isConfigLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val isSensorLandscape = isPhysicalLandscape
 
         val isDeviceLandscape = isDisplayRotationLandscape ||
                 isDisplayDimensionsLandscape ||
-                isConfigLandscape ||
-                isSensorLandscape
+                isConfigLandscape
 
         val minDim = minOf(rawW, rawH)
         val maxDim = maxOf(rawW, rawH)
@@ -991,7 +951,7 @@ class ScreenRecordService : LifecycleService() {
         val screenW = if (isLandscape) maxDim else minDim
         val screenH = if (isLandscape) minDim else maxDim
 
-        Log.d(TAG, "getScreenDimensions: setting=$orientationSetting, isLandscape=$isLandscape, w=$screenW, h=$screenH (rot=$displayRotation, dims=${rawW}x${rawH}, sensorLandscape=$isSensorLandscape)")
+        Log.d(TAG, "getScreenDimensions: setting=$orientationSetting, isLandscape=$isLandscape, w=$screenW, h=$screenH (rot=$displayRotation, dims=${rawW}x${rawH})")
 
         return Triple(screenW, screenH, densityDpi)
     }
@@ -1586,22 +1546,9 @@ class ScreenRecordService : LifecycleService() {
         stopSelf()
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            isPhysicalLandscape = true
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            isPhysicalLandscape = false
-        }
-    }
-
     override fun onDestroy() {
         cancelCountdown()
         releaseWakeLock()
-        try {
-            orientationListener?.disable()
-            orientationListener = null
-        } catch (_: Exception) {}
         try {
             displayListener?.let {
                 val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
