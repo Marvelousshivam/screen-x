@@ -222,19 +222,40 @@ class AdbRecordService : LifecycleService() {
 
                 // Calculate display metrics for --size to prevent resolution mismatch on app switch
                 val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
+                val display = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this@AdbRecordService)
                 val metrics = android.util.DisplayMetrics()
-                if (wm != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        val bounds = wm.maximumWindowMetrics.bounds
-                        metrics.widthPixels = bounds.width()
-                        metrics.heightPixels = bounds.height()
-                    } else {
-                        @Suppress("DEPRECATION")
-                        wm.defaultDisplay.getRealMetrics(metrics)
-                    }
+                if (display != null) {
+                    display.getRealMetrics(metrics)
+                } else if (wm != null) {
+                    @Suppress("DEPRECATION")
+                    wm.defaultDisplay.getRealMetrics(metrics)
                 }
-                val width = metrics.widthPixels and 1.inv()
-                val height = metrics.heightPixels and 1.inv()
+
+                var dispW = metrics.widthPixels
+                var dispH = metrics.heightPixels
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wm != null) {
+                    try {
+                        val currBounds = wm.currentWindowMetrics.bounds
+                        if (currBounds.width() > 0 && currBounds.height() > 0) {
+                            dispW = currBounds.width()
+                            dispH = currBounds.height()
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                val rotation = display?.rotation ?: android.view.Surface.ROTATION_0
+                val isLandscape = rotation == android.view.Surface.ROTATION_90 ||
+                        rotation == android.view.Surface.ROTATION_270 ||
+                        resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ||
+                        dispW > dispH
+
+                val minDim = minOf(dispW, dispH)
+                val maxDim = maxOf(dispW, dispH)
+                val rawW = if (isLandscape) maxDim else minDim
+                val rawH = if (isLandscape) minDim else maxDim
+                val aligned = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(rawW, rawH)
+                val width = aligned.first and 1.inv()
+                val height = aligned.second and 1.inv()
                 val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
 
                 val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())

@@ -38,6 +38,8 @@ import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
+import android.view.Surface
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -733,30 +735,8 @@ class ScreenRecordService : LifecycleService() {
                     audioCaptureHelper = null
                 }
 
-                // Metrics: Use maximumWindowMetrics on API 30+ to capture full screen even in multi-window/split-screen
-                val screenWidth: Int
-                val screenHeight: Int
-                val screenDensityDpi: Int
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
-                    val currBounds = windowManager.currentWindowMetrics.bounds
-                    val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
-                        maxBounds
-                    } else {
-                        currBounds
-                    }
-                    screenWidth = bounds.width()
-                    screenHeight = bounds.height()
-                    screenDensityDpi = resources.configuration.densityDpi
-                } else {
-                    val metrics = DisplayMetrics()
-                    @Suppress("DEPRECATION")
-                    windowManager.defaultDisplay.getRealMetrics(metrics)
-                    screenWidth = metrics.widthPixels
-                    screenHeight = metrics.heightPixels
-                    screenDensityDpi = metrics.densityDpi
-                }
-                
+                // Metrics: Accurately detect display dimensions and active orientation
+                val (screenWidth, screenHeight, screenDensityDpi) = getScreenDimensions(orientationSetting)
                 val dimensions = getTargetDimensions(targetResolution, screenWidth, screenHeight, orientationSetting)
                 val recordWidth = dimensions.first
                 val recordHeight = dimensions.second
@@ -872,26 +852,8 @@ class ScreenRecordService : LifecycleService() {
             // Set paths
             setOutputFile(tempVideoFile?.absolutePath)
 
-            // Setup dimensions (use maximumWindowMetrics on API 30+ to prevent window-bound clipping)
-            val setupWidth: Int
-            val setupHeight: Int
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
-                val currBounds = windowManager.currentWindowMetrics.bounds
-                val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
-                    maxBounds
-                } else {
-                    currBounds
-                }
-                setupWidth = bounds.width()
-                setupHeight = bounds.height()
-            } else {
-                val m = DisplayMetrics()
-                @Suppress("DEPRECATION")
-                windowManager.defaultDisplay.getRealMetrics(m)
-                setupWidth = m.widthPixels
-                setupHeight = m.heightPixels
-            }
+            // Setup dimensions
+            val (setupWidth, setupHeight, _) = getScreenDimensions(orientationSetting)
             val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
             setVideoSize(dimensions.first, dimensions.second)
 
@@ -929,16 +891,71 @@ class ScreenRecordService : LifecycleService() {
         }
     }
 
-    private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
-        if (resolutionSetting == "Original") {
-            return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(screenWidth, screenHeight)
+    private fun getScreenDimensions(orientationSetting: String): Triple<Int, Int, Int> {
+        val display = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this)
+        val metrics = DisplayMetrics()
+        if (display != null) {
+            display.getRealMetrics(metrics)
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getRealMetrics(metrics)
         }
 
+        var dispW = metrics.widthPixels
+        var dispH = metrics.heightPixels
+        var densityDpi = metrics.densityDpi
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val currBounds = windowManager.currentWindowMetrics.bounds
+                if (currBounds.width() > 0 && currBounds.height() > 0) {
+                    dispW = currBounds.width()
+                    dispH = currBounds.height()
+                }
+            } catch (_: Exception) {}
+            if (densityDpi <= 0) {
+                densityDpi = resources.configuration.densityDpi
+            }
+        }
+        if (densityDpi <= 0) densityDpi = 320
+
+        val displayRotation = display?.rotation ?: Surface.ROTATION_0
+        val isDeviceLandscape = displayRotation == Surface.ROTATION_90 ||
+                displayRotation == Surface.ROTATION_270 ||
+                resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE ||
+                dispW > dispH
+
+        val minDim = minOf(dispW, dispH)
+        val maxDim = maxOf(dispW, dispH)
+
         val isLandscape = when (orientationSetting) {
-            "Portrait" -> false
             "Landscape" -> true
+            "Portrait" -> false
+            else -> isDeviceLandscape
+        }
+
+        val screenW = if (isLandscape) maxDim else minDim
+        val screenH = if (isLandscape) minDim else maxDim
+
+        return Triple(screenW, screenH, densityDpi)
+    }
+
+    private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
+        val minDim = minOf(screenWidth, screenHeight)
+        val maxDim = maxOf(screenWidth, screenHeight)
+
+        val isLandscape = when (orientationSetting) {
+            "Landscape" -> true
+            "Portrait" -> false
             else -> screenWidth > screenHeight
         }
+
+        if (resolutionSetting == "Original") {
+            val rawW = if (isLandscape) maxDim else minDim
+            val rawH = if (isLandscape) minDim else maxDim
+            return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(rawW, rawH)
+        }
+
         val longSide = when (resolutionSetting) {
             "4K" -> 3840
             "1440p" -> 2560
@@ -948,19 +965,11 @@ class ScreenRecordService : LifecycleService() {
             else -> 1280
         }
 
-        val targetW: Int
-        val targetH: Int
-        val minDim = minOf(screenWidth, screenHeight).toFloat()
-        val maxDim = maxOf(screenWidth, screenHeight).toFloat()
-        val aspectRatio = if (maxDim > 0) minDim / maxDim else 0.5625f
+        val aspectRatio = if (maxDim > 0) minDim.toFloat() / maxDim.toFloat() else 0.5625f
+        val shortSide = (longSide * aspectRatio).toInt()
 
-        if (isLandscape) {
-            targetW = longSide
-            targetH = (longSide * aspectRatio).toInt()
-        } else {
-            targetH = longSide
-            targetW = (longSide * aspectRatio).toInt()
-        }
+        val targetW = if (isLandscape) longSide else shortSide
+        val targetH = if (isLandscape) shortSide else longSide
 
         return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(targetW, targetH)
     }
