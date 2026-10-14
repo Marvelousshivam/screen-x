@@ -62,7 +62,8 @@
             android:launchMode="singleInstance"
             android:taskAffinity=""
             android:excludeFromRecents="true"
-            android:noHistory="true" />
+            android:noHistory="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
 
         <service
             android:name=".service.ScreenRecordService"

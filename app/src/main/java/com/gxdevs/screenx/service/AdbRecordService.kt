@@ -221,27 +221,25 @@ class AdbRecordService : LifecycleService() {
                 dir.mkdirs()
 
                 // Calculate display metrics for --size to prevent resolution mismatch on app switch
-                val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
-                val display = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this@AdbRecordService)
+                val dm = getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+                val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+                    ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this@AdbRecordService)
+                val realSize = android.graphics.Point()
                 val metrics = android.util.DisplayMetrics()
+                @Suppress("DEPRECATION")
                 if (display != null) {
+                    display.getRealSize(realSize)
                     display.getRealMetrics(metrics)
-                } else if (wm != null) {
+                } else {
+                    val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
                     @Suppress("DEPRECATION")
-                    wm.defaultDisplay.getRealMetrics(metrics)
+                    wm?.defaultDisplay?.getRealMetrics(metrics)
+                    realSize.x = metrics.widthPixels
+                    realSize.y = metrics.heightPixels
                 }
 
-                var dispW = metrics.widthPixels
-                var dispH = metrics.heightPixels
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wm != null) {
-                    try {
-                        val currBounds = wm.currentWindowMetrics.bounds
-                        if (currBounds.width() > 0 && currBounds.height() > 0) {
-                            dispW = currBounds.width()
-                            dispH = currBounds.height()
-                        }
-                    } catch (_: Exception) {}
-                }
+                val dispW = if (realSize.x > 0) realSize.x else metrics.widthPixels
+                val dispH = if (realSize.y > 0) realSize.y else metrics.heightPixels
 
                 val rotation = display?.rotation ?: android.view.Surface.ROTATION_0
                 val isLandscape = rotation == android.view.Surface.ROTATION_90 ||
