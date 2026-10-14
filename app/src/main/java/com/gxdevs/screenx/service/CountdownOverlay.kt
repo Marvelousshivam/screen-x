@@ -28,9 +28,9 @@ class CountdownOverlay(
     private var isDismissed = false
     private var tickRunnable: Runnable? = null
 
-    fun show(onFinished: () -> Unit) {
+    fun show(onFinished: (isLandscape: Boolean?) -> Unit) {
         if (totalSeconds <= 0) {
-            onFinished()
+            onFinished(null)
             return
         }
 
@@ -95,8 +95,22 @@ class CountdownOverlay(
                     count--
                     handler.postDelayed(this, 1000)
                 } else {
+                    val detectedLandscape = try {
+                        val rot = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            container.display?.rotation ?: android.view.Surface.ROTATION_0
+                        } else {
+                            @Suppress("DEPRECATION")
+                            windowManager.defaultDisplay.rotation
+                        }
+                        val isRotLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
+                        val isConfigLandscape = container.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                        val isSizeLandscape = container.width > container.height && container.height > 0
+                        isRotLandscape || isConfigLandscape || isSizeLandscape
+                    } catch (_: Exception) {
+                        null
+                    }
                     dismiss()
-                    onFinished()
+                    onFinished(detectedLandscape)
                 }
             }
         }

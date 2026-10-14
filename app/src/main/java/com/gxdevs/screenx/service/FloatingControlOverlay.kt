@@ -74,6 +74,19 @@ class FloatingControlOverlay(private val context: Context) {
     val isShowing: Boolean
         get() = rootView != null && rootView?.windowToken != null
 
+    fun isOverlayLandscape(): Boolean {
+        val view = rootView ?: return false
+        val rot = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try { view.display?.rotation ?: android.view.Surface.ROTATION_0 } catch (_: Exception) { android.view.Surface.ROTATION_0 }
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.rotation
+        }
+        val isRotLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
+        val isConfigLandscape = view.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        return isRotLandscape || isConfigLandscape
+    }
+
     // Compose-observable states
     private val isExpandedState    = mutableStateOf(false)
     private val isPausedState      = mutableStateOf(false)

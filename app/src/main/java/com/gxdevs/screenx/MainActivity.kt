@@ -523,11 +523,30 @@ class MainActivity : ComponentActivity() {
         captureLauncher.launch(captureIntent)
     }
 
+    private fun isCurrentUiLandscape(): Boolean {
+        val rot = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display?.rotation ?: android.view.Surface.ROTATION_0
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.rotation
+        }
+        val isRotLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
+        val isConfigLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val isMetricsLandscape = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val bounds = windowManager.currentWindowMetrics.bounds
+                bounds.width() > bounds.height()
+            } catch (_: Exception) { false }
+        } else false
+        return isRotLandscape || isConfigLandscape || isMetricsLandscape
+    }
+
     private fun startRecordingService(resultCode: Int, resultData: Intent) {
         val serviceIntent = Intent(this, ScreenRecordService::class.java).apply {
             action = ScreenRecordService.ACTION_START
             putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
             putExtra(ScreenRecordService.EXTRA_RESULT_DATA, resultData)
+            putExtra(ScreenRecordService.EXTRA_START_IS_LANDSCAPE, isCurrentUiLandscape())
         }
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -589,6 +608,7 @@ class MainActivity : ComponentActivity() {
                 try {
                     val startIntent = Intent(this@MainActivity, AdbRecordService::class.java).apply {
                         action = AdbRecordService.ACTION_START_ADB
+                        putExtra(ScreenRecordService.EXTRA_START_IS_LANDSCAPE, isCurrentUiLandscape())
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         startForegroundService(startIntent)
