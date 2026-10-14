@@ -60,7 +60,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
+import com.gxdevs.screenx.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -153,10 +155,10 @@ fun VideoTrimmerScreen(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text("Select Video to Edit", fontWeight = FontWeight.Bold) },
+                    title = { Text(stringResource(R.string.trimmer_no_video), fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
-                            Icon(Lucide.ArrowLeft, "Back")
+                            Icon(Lucide.ArrowLeft, stringResource(R.string.back))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -193,12 +195,12 @@ fun VideoTrimmerScreen(
                             Spacer(Modifier.width(16.dp))
                             Column {
                                 Text(
-                                    "Choose from Device",
+                                    stringResource(R.string.choose_from_device),
                                     fontWeight = FontWeight.Bold, fontSize = 18.sp,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Text(
-                                    "Browse files from internal storage",
+                                    stringResource(R.string.browse_internal_storage),
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                 )
@@ -208,12 +210,12 @@ fun VideoTrimmerScreen(
                 }
 
                 Spacer(Modifier.height(24.dp))
-                Text("Recent Captures", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.recent_captures), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(Modifier.height(8.dp))
 
                 if (videos.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No recordings available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.no_recordings_available), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -412,9 +414,9 @@ fun TrimmerEditor(
             mutable.add(idx, seg1)
             segments = mutable
             selectedSegmentId = seg2.id
-            Toast.makeText(context, "Video split at ${formatTime(splitMs)}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.trimmer_toast_split_at_fmt, formatTime(splitMs)), Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(context, "Cannot split too close to segment boundaries", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.trimmer_toast_split_boundary), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -429,7 +431,7 @@ fun TrimmerEditor(
                 }
             }
         } else {
-            Toast.makeText(context, "Please select a segment first", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.trimmer_toast_select_segment), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -458,10 +460,10 @@ fun TrimmerEditor(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Video", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.edit_video), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = handleExit, enabled = !isProcessing) {
-                        Icon(Lucide.ArrowLeft, "Back")
+                        Icon(Lucide.ArrowLeft, stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -469,7 +471,7 @@ fun TrimmerEditor(
                         onClick = {
                             val activeSegments = segments.filter { !it.isDeleted }.map { Pair(it.startMs, it.endMs) }
                             if (activeSegments.isEmpty()) {
-                                Toast.makeText(context, "Cannot save with all segments deleted", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.trimmer_toast_all_deleted), Toast.LENGTH_SHORT).show()
                             } else {
                                 executeExport(context, coroutineScope, videoUri, videoName, activeSegments, { isProcessing = it }, { processingProgress = it }, { processingLabel = it }, onTrimSuccess)
                             }
@@ -479,7 +481,7 @@ fun TrimmerEditor(
                     ) {
                         Icon(Lucide.Save, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Save Video")
+                        Text(stringResource(R.string.save_video))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -663,7 +665,7 @@ fun TrimmerEditor(
                             if (isDeleted) {
                                 Spacer(Modifier.width(6.dp))
                                 Text(
-                                    text = "DELETED",
+                                    text = stringResource(R.string.trimmer_deleted_tag),
                                     color = MaterialTheme.colorScheme.error,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Black
@@ -693,13 +695,13 @@ fun TrimmerEditor(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             if (activeSeg != null) {
-                                InfoChip("Selected Start", formatTime(activeSeg.startMs), MaterialTheme.colorScheme.primary)
-                                InfoChip("Selected Duration", formatTime(activeSeg.endMs - activeSeg.startMs), MaterialTheme.colorScheme.tertiary)
-                                InfoChip("Selected End", formatTime(activeSeg.endMs), MaterialTheme.colorScheme.secondary)
+                                InfoChip(stringResource(R.string.trimmer_sel_start), formatTime(activeSeg.startMs), MaterialTheme.colorScheme.primary)
+                                InfoChip(stringResource(R.string.trimmer_sel_duration), formatTime(activeSeg.endMs - activeSeg.startMs), MaterialTheme.colorScheme.tertiary)
+                                InfoChip(stringResource(R.string.trimmer_sel_end), formatTime(activeSeg.endMs), MaterialTheme.colorScheme.secondary)
                             } else {
-                                InfoChip("Start", "00:00.0", Color.Gray)
-                                InfoChip("Duration", formatTime(videoDurationMs), Color.Gray)
-                                InfoChip("End", formatTime(videoDurationMs), Color.Gray)
+                                InfoChip(stringResource(R.string.trimmer_start), "00:00.0", Color.Gray)
+                                InfoChip(stringResource(R.string.trimmer_duration_label), formatTime(videoDurationMs), Color.Gray)
+                                InfoChip(stringResource(R.string.trimmer_end), formatTime(videoDurationMs), Color.Gray)
                             }
                         }
 
@@ -981,7 +983,7 @@ fun TrimmerEditor(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                "Tap timeline to select parts, then split or delete/restore them",
+                                stringResource(R.string.trimmer_hint_timeline),
                                 color = Color.Gray, fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -1001,7 +1003,7 @@ fun TrimmerEditor(
                                 ) {
                                     Icon(Lucide.Scissors, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Split here", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(stringResource(R.string.split_here), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 }
 
                                 val isSelectedDeleted = segments.firstOrNull { it.id == activeId }?.isDeleted == true
@@ -1022,7 +1024,7 @@ fun TrimmerEditor(
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        text = if (isSelectedDeleted) "Restore part" else "Delete part",
+                                        text = if (isSelectedDeleted) stringResource(R.string.restore_part) else stringResource(R.string.delete_part),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
                                     )
@@ -1077,7 +1079,7 @@ fun TrimmerEditor(
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Please keep ScreenX open",
+                        stringResource(R.string.keep_app_open),
                         fontSize = 11.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.Center
@@ -1095,7 +1097,7 @@ fun TrimmerEditor(
             modifier = Modifier.widthIn(max = 440.dp),
             title = {
                 Text(
-                    text = "Discard changes?",
+                    text = stringResource(R.string.discard_changes_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -1104,7 +1106,7 @@ fun TrimmerEditor(
             },
             text = {
                 Text(
-                    text = "You have unsaved edits. Are you sure you want to discard them and exit?",
+                    text = stringResource(R.string.discard_changes_msg),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1120,7 +1122,7 @@ fun TrimmerEditor(
                     )
                 ) {
                     Text(
-                        "Discard",
+                        stringResource(R.string.discard),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelLarge
                     )
@@ -1134,7 +1136,7 @@ fun TrimmerEditor(
                     )
                 ) {
                     Text(
-                        "Keep Editing",
+                        stringResource(R.string.keep_editing),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelLarge
                     )
@@ -1157,7 +1159,7 @@ private fun executeExport(
     onSuccess: () -> Unit
 ) {
     setProcessing(true)
-    setLabel("Exporting Video…")
+    setLabel(context.getString(R.string.trimmer_export))
     val progressCb = makeProgressCallback(scope, setProgress)
     scope.launch(Dispatchers.IO) {
         var tempFile: File? = null
@@ -1175,7 +1177,7 @@ private fun executeExport(
             tempFile = null
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Video edited & saved successfully!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_edited_saved), Toast.LENGTH_SHORT).show()
                 onSuccess()
             }
         } catch (e: Exception) {
@@ -1183,7 +1185,7 @@ private fun executeExport(
             tempFile?.delete()
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_export_failed_fmt, e.message ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -1268,11 +1270,11 @@ private fun executeTrim(
     onSuccess: () -> Unit
 ) {
     if (endMs <= startMs + 500L) {
-        Toast.makeText(context, "Selection must be at least 0.5 seconds", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.trimmer_toast_min_duration), Toast.LENGTH_SHORT).show()
         return
     }
     setProcessing(true)
-    setLabel("Trimming Video…")
+    setLabel(context.getString(R.string.trimmer_mode_trim))
     val progressCb = makeProgressCallback(scope, setProgress)
     scope.launch(Dispatchers.IO) {
         var tempFile: File? = null
@@ -1290,7 +1292,7 @@ private fun executeTrim(
             tempFile = null  // saveVideoToMediaStore deletes it
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Trimmed video saved!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_trim_saved), Toast.LENGTH_SHORT).show()
                 onSuccess()
             }
         } catch (e: Exception) {
@@ -1298,7 +1300,7 @@ private fun executeTrim(
             tempFile?.delete()
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Trim failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_trim_failed_fmt, e.message ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -1318,11 +1320,11 @@ private fun executeDelete(
     onSuccess: () -> Unit
 ) {
     if (cutEndMs <= cutStartMs + 500L) {
-        Toast.makeText(context, "Delete segment must be at least 0.5 seconds", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.trimmer_toast_delete_min), Toast.LENGTH_SHORT).show()
         return
     }
     setProcessing(true)
-    setLabel("Deleting Segment…")
+    setLabel(context.getString(R.string.trimmer_mode_delete))
     val progressCb = makeProgressCallback(scope, setProgress)
     scope.launch(Dispatchers.IO) {
         var tempFile: File? = null
@@ -1341,7 +1343,7 @@ private fun executeDelete(
             tempFile = null
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Segment deleted & saved!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_delete_saved), Toast.LENGTH_SHORT).show()
                 onSuccess()
             }
         } catch (e: Exception) {
@@ -1349,7 +1351,7 @@ private fun executeDelete(
             tempFile?.delete()
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Delete failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_delete_failed_fmt, e.message ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -1368,16 +1370,16 @@ private fun executeSplit(
     onSuccess: () -> Unit
 ) {
     if (splitMs < 500L) {
-        Toast.makeText(context, "Split point must be at least 0.5s from start", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.trimmer_toast_split_start_min), Toast.LENGTH_SHORT).show()
         return
     }
     // Guard: Part B would be empty if split is at the very end
     if (totalDurationMs > 0 && splitMs >= totalDurationMs - 500L) {
-        Toast.makeText(context, "Split point must be at least 0.5s from end", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.trimmer_toast_split_end_min), Toast.LENGTH_SHORT).show()
         return
     }
     setProcessing(true)
-    setLabel("Splitting Video…")
+    setLabel(context.getString(R.string.trimmer_mode_split))
     val progressCb = makeProgressCallback(scope, setProgress)
     scope.launch(Dispatchers.IO) {
         val ts   = System.currentTimeMillis()
@@ -1400,7 +1402,7 @@ private fun executeSplit(
             outB.takeIf { it.exists() }?.delete()
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Split into Part 1 & Part 2 — saved!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_split_saved), Toast.LENGTH_SHORT).show()
                 onSuccess()
             }
         } catch (e: Exception) {
@@ -1410,7 +1412,7 @@ private fun executeSplit(
             outB.takeIf { it.exists() }?.delete()
             withContext(Dispatchers.Main) {
                 setProcessing(false)
-                Toast.makeText(context, "Split failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, context.getString(R.string.trimmer_toast_split_failed_fmt, e.message ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -1560,7 +1562,7 @@ fun RecentSelectCard(video: RecordedVideo, onClick: () -> Unit) {
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(video.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("Duration: ${VideoHelper.formatDuration(video.duration)}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.trimmer_duration, VideoHelper.formatDuration(video.duration)), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Lucide.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
