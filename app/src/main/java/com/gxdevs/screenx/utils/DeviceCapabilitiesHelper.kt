@@ -108,22 +108,18 @@ object DeviceCapabilitiesHelper {
     }
 
     fun getMaxSupportedResolution(context: Context): Pair<Int, Int> {
-        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val maxBounds = try { windowManager.maximumWindowMetrics.bounds } catch (_: Exception) { null }
-            val currBounds = windowManager.currentWindowMetrics.bounds
-            val bounds = if (maxBounds != null && (maxBounds.width() > currBounds.width() || maxBounds.height() > currBounds.height())) {
-                maxBounds
-            } else {
-                currBounds
-            }
-            Pair(bounds.width(), bounds.height())
+        val display = getDisplay(context)
+        val metrics = android.util.DisplayMetrics()
+        if (display != null) {
+            display.getRealMetrics(metrics)
         } else {
-            val metrics = android.util.DisplayMetrics()
+            val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             @Suppress("DEPRECATION")
             windowManager.defaultDisplay.getRealMetrics(metrics)
-            Pair(metrics.widthPixels, metrics.heightPixels)
         }
+        val rawW = metrics.widthPixels
+        val rawH = metrics.heightPixels
+        return Pair(maxOf(rawW, rawH), minOf(rawW, rawH))
     }
 
     fun getMaxSupportedFps(context: Context): Int {
@@ -261,11 +257,20 @@ object DeviceCapabilitiesHelper {
             w = (w / effWidthAlign) * effWidthAlign
         }
 
-        // Clamp to encoder's supported bounds if available
+        // Validate against hardware encoder's absolute maximum supported dimension.
+        // Avoid blindly clamping w to supportedWidths, as mobile encoders
+        // declare supportedWidths based on portrait max (e.g. 1080), which corrupts landscape recordings.
         if (videoCaps != null) {
             try {
-                w = videoCaps.supportedWidths.clamp(w)
-                h = videoCaps.supportedHeights.clamp(h)
+                if (!videoCaps.isSizeSupported(w, h)) {
+                    val maxSupportedDim = maxOf(videoCaps.supportedWidths.upper, videoCaps.supportedHeights.upper)
+                    if (w > maxSupportedDim) {
+                        w = (maxSupportedDim / effWidthAlign) * effWidthAlign
+                    }
+                    if (h > maxSupportedDim) {
+                        h = (maxSupportedDim / effHeightAlign) * effHeightAlign
+                    }
+                }
             } catch (_: Exception) {}
         }
 

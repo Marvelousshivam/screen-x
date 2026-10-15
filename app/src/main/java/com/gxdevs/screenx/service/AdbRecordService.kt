@@ -220,21 +220,31 @@ class AdbRecordService : LifecycleService() {
                 )
                 dir.mkdirs()
 
-                // Calculate display metrics for --size to prevent resolution mismatch on app switch
-                val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
+                // Calculate display metrics and orientation for --size
+                val dm = getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+                val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
                 val metrics = android.util.DisplayMetrics()
-                if (wm != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        val bounds = wm.maximumWindowMetrics.bounds
-                        metrics.widthPixels = bounds.width()
-                        metrics.heightPixels = bounds.height()
-                    } else {
-                        @Suppress("DEPRECATION")
-                        wm.defaultDisplay.getRealMetrics(metrics)
-                    }
+                if (display != null) {
+                    display.getRealMetrics(metrics)
+                } else {
+                    val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
+                    @Suppress("DEPRECATION")
+                    wm?.defaultDisplay?.getRealMetrics(metrics)
                 }
-                val width = metrics.widthPixels and 1.inv()
-                val height = metrics.heightPixels and 1.inv()
+
+                val rot = display?.rotation ?: android.view.Surface.ROTATION_0
+                val isRotLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
+                val isConfigLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                val isMetricsLandscape = metrics.widthPixels > metrics.heightPixels
+                val isDeviceLandscape = isRotLandscape || isConfigLandscape || isMetricsLandscape
+
+                val rawW = metrics.widthPixels
+                val rawH = metrics.heightPixels
+                val minDim = minOf(rawW, rawH)
+                val maxDim = maxOf(rawW, rawH)
+
+                val width = (if (isDeviceLandscape) maxDim else minDim) and 1.inv()
+                val height = (if (isDeviceLandscape) minDim else maxDim) and 1.inv()
                 val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
 
                 val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
