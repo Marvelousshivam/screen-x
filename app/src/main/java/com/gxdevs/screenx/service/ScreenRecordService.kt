@@ -908,8 +908,12 @@ class ScreenRecordService : LifecycleService() {
         if (densityDpi <= 0) densityDpi = resources.configuration.densityDpi
         if (densityDpi <= 0) densityDpi = 320
 
-        val rawW = metrics.widthPixels
-        val rawH = metrics.heightPixels
+        var rawW = metrics.widthPixels
+        var rawH = metrics.heightPixels
+        if (rawW <= 0 || rawH <= 0) {
+            rawW = resources.displayMetrics.widthPixels
+            rawH = resources.displayMetrics.heightPixels
+        }
         val minDim = minOf(rawW, rawH).coerceAtLeast(720)
         val maxDim = maxOf(rawW, rawH).coerceAtLeast(1280)
 

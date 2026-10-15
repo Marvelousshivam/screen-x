@@ -110,15 +110,23 @@ object DeviceCapabilitiesHelper {
     fun getMaxSupportedResolution(context: Context): Pair<Int, Int> {
         val display = getDisplay(context)
         val metrics = android.util.DisplayMetrics()
-        if (display != null) {
-            display.getRealMetrics(metrics)
-        } else {
-            val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            @Suppress("DEPRECATION")
-            windowManager.defaultDisplay.getRealMetrics(metrics)
+        try {
+            if (display != null) {
+                display.getRealMetrics(metrics)
+            } else {
+                val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+                @Suppress("DEPRECATION")
+                windowManager?.defaultDisplay?.getRealMetrics(metrics)
+            }
+        } catch (_: Exception) {}
+        var rawW = metrics.widthPixels
+        var rawH = metrics.heightPixels
+        if (rawW <= 0 || rawH <= 0) {
+            rawW = context.resources.displayMetrics.widthPixels
+            rawH = context.resources.displayMetrics.heightPixels
         }
-        val rawW = metrics.widthPixels
-        val rawH = metrics.heightPixels
+        if (rawW <= 0) rawW = 1080
+        if (rawH <= 0) rawH = 1920
         return Pair(maxOf(rawW, rawH), minOf(rawW, rawH))
     }
 
@@ -274,8 +282,9 @@ object DeviceCapabilitiesHelper {
             } catch (_: Exception) {}
         }
 
-        if (w <= 0) w = 720
-        if (h <= 0) h = 1280
+        if (w <= 0 || h <= 0) {
+            return if (rawWidth >= rawHeight) Pair(1920, 1080) else Pair(1080, 1920)
+        }
         return Pair(w, h)
     }
 

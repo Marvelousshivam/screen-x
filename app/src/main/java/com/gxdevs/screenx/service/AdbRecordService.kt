@@ -238,10 +238,14 @@ class AdbRecordService : LifecycleService() {
                 val isMetricsLandscape = metrics.widthPixels > metrics.heightPixels
                 val isDeviceLandscape = isRotLandscape || isConfigLandscape || isMetricsLandscape
 
-                val rawW = metrics.widthPixels
-                val rawH = metrics.heightPixels
-                val minDim = minOf(rawW, rawH)
-                val maxDim = maxOf(rawW, rawH)
+                var rawW = metrics.widthPixels
+                var rawH = metrics.heightPixels
+                if (rawW <= 0 || rawH <= 0) {
+                    rawW = resources.displayMetrics.widthPixels
+                    rawH = resources.displayMetrics.heightPixels
+                }
+                val minDim = minOf(rawW, rawH).coerceAtLeast(720)
+                val maxDim = maxOf(rawW, rawH).coerceAtLeast(1280)
 
                 val width = (if (isDeviceLandscape) maxDim else minDim) and 1.inv()
                 val height = (if (isDeviceLandscape) minDim else maxDim) and 1.inv()
