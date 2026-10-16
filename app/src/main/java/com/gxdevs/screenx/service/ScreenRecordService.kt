@@ -917,16 +917,12 @@ class ScreenRecordService : LifecycleService() {
         val minDim = minOf(rawW, rawH).coerceAtLeast(720)
         val maxDim = maxOf(rawW, rawH).coerceAtLeast(1280)
 
-        // Device orientation detection (no accelerometer angle sensor polling):
-        // 1. Display rotation (90 or 270 deg)
+        // Device orientation detection: use only hardware display rotation.
+        // On MIUI/HyperOS devices (POCO X3 Pro, X4 GT, Redmi, etc.), configuration.orientation
+        // and raw pixel metrics can be stale/incorrect inside a background service.
+        // display.rotation is the sole reliable hardware-level signal.
         val rot = display?.rotation ?: Surface.ROTATION_0
-        val isRotLandscape = rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270
-        // 2. Configuration orientation (when apps/games lock landscape)
-        val isConfigLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        // 3. Raw metrics aspect ratio
-        val isMetricsLandscape = rawW > rawH
-
-        val isDeviceLandscape = isRotLandscape || isConfigLandscape || isMetricsLandscape
+        val isDeviceLandscape = rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270
 
         val isLandscape = when (orientationSetting) {
             "Landscape" -> true
@@ -998,7 +994,6 @@ class ScreenRecordService : LifecycleService() {
                 audioCaptureHelper?.resume()
                 isPaused = false
                 startTimeMs = System.currentTimeMillis()
-                recordingStartTimeMs = startTimeMs
                 updateNotification("Recording")
                 floatingControlOverlay?.updateState()
             } catch (e: Exception) {
@@ -1342,6 +1337,9 @@ class ScreenRecordService : LifecycleService() {
                 })
             } catch (e: Exception) {
                 e.printStackTrace()
+                try {
+                    resolver.delete(videoUri, null, null)
+                } catch (_: Exception) {}
             } finally {
                 if (tempFile.exists()) {
                     tempFile.delete()
@@ -1360,9 +1358,11 @@ class ScreenRecordService : LifecycleService() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             val point = android.graphics.Point()
-            vDisplay.display.getRealSize(point)
-            val width = point.x
-            val height = point.y
+            try {
+                vDisplay.display?.getRealSize(point)
+            } catch (_: Exception) {}
+            val width = if (point.x > 0) point.x else recordWidth
+            val height = if (point.y > 0) point.y else recordHeight
 
             val imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             val originalSurface = mediaRecorder?.surface

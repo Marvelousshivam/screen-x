@@ -249,17 +249,37 @@ object AdbManager {
         }
     }
 
-    /** Tries to reconnect using the last-known port or auto-discovery. */
-    suspend fun reconnectIfNeeded(context: Context): Boolean {
-        if (isConnected) return true
+    /** Checks if the live connection is actually responding over TLS socket. Must be called from a background thread. */
+    fun isConnectionAlive(): Boolean {
+        val mgr = manager ?: return false
         return try {
+            val stream = mgr.openStream("exec:echo 1")
+            stream?.close()
+            true
+        } catch (_: Exception) {
+            disconnect()
+            false
+        }
+    }
+
+    /** Tries to reconnect using the last-known port, falling back to mDNS auto-discovery. */
+    suspend fun reconnectIfNeeded(context: Context): Boolean = withContext(Dispatchers.IO) {
+        if (isConnectionAlive()) return@withContext true
+        disconnect()
+        return@withContext try {
             val savedPort = SettingsManager(context).adbPortFlow.first()
-            val result = if (savedPort > 0) {
-                connect(context, savedPort)
-            } else {
-                connect(context, 0)
+            var ok = false
+            if (savedPort > 0) {
+                val result = connect(context, savedPort)
+                ok = result.isSuccess
             }
-            result.isSuccess
+            if (!ok) {
+                // If saved port connection failed (e.g. port changed after wireless debugging restart),
+                // fallback to auto-discovery (mDNS)
+                val fallback = connect(context, 0)
+                ok = fallback.isSuccess
+            }
+            ok
         } catch (e: Exception) {
             Log.w(TAG, "reconnectIfNeeded failed: ${e.message}")
             false

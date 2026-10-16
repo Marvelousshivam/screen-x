@@ -86,7 +86,7 @@ class AdbRecordService : LifecycleService() {
                 "ScreenX:AdbWakeLock"
             ).apply {
                 setReferenceCounted(false)
-                acquire(2 * 60 * 60 * 1000L)
+                acquire(TIME_LIMIT_SECS * 1000L + 30_000L)
             }
         } catch (_: Exception) {}
     }
@@ -99,6 +99,8 @@ class AdbRecordService : LifecycleService() {
         } catch (_: Exception) {}
         wakeLock = null
     }
+
+    private var isScreenOffReceiverRegistered = false
 
     private val screenOffReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -133,8 +135,15 @@ class AdbRecordService : LifecycleService() {
         settingsManager = SettingsManager(this)
         createNotificationChannel()
 
-        val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
-        registerReceiver(screenOffReceiver, screenOffFilter)
+        if (!isScreenOffReceiverRegistered) {
+            try {
+                val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
+                registerReceiver(screenOffReceiver, screenOffFilter)
+                isScreenOffReceiverRegistered = true
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to register screenOffReceiver", e)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -233,10 +242,11 @@ class AdbRecordService : LifecycleService() {
                 }
 
                 val rot = display?.rotation ?: android.view.Surface.ROTATION_0
-                val isRotLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
-                val isConfigLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-                val isMetricsLandscape = metrics.widthPixels > metrics.heightPixels
-                val isDeviceLandscape = isRotLandscape || isConfigLandscape || isMetricsLandscape
+                // Use only hardware display rotation for landscape detection.
+                // On MIUI/HyperOS devices (POCO X3 Pro, X4 GT, Redmi, etc.), resources.configuration.orientation
+                // and metrics.widthPixels can be stale/wrong inside a background service — the display.rotation
+                // is the only reliable hardware-level signal. This matches the working behaviour from v1.6.0.
+                val isDeviceLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
 
                 var rawW = metrics.widthPixels
                 var rawH = metrics.heightPixels
@@ -457,9 +467,12 @@ class AdbRecordService : LifecycleService() {
 
     override fun onDestroy() {
         releaseWakeLock()
-        try {
-            unregisterReceiver(screenOffReceiver)
-        } catch (_: Exception) {}
+        if (isScreenOffReceiverRegistered) {
+            try {
+                unregisterReceiver(screenOffReceiver)
+            } catch (_: Exception) {}
+            isScreenOffReceiverRegistered = false
+        }
         super.onDestroy()
     }
 }

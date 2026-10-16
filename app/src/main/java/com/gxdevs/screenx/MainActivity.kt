@@ -49,6 +49,7 @@ import com.gxdevs.screenx.utils.UpdateManager
 import com.gxdevs.screenx.utils.UpdateCheckResult
 import com.gxdevs.screenx.utils.AppUpdateInfo
 import com.gxdevs.screenx.ui.components.UpdateDialog
+
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -206,8 +207,8 @@ class MainActivity : ComponentActivity() {
                     }
                 var selectedVideoForTrimming by remember { mutableStateOf<RecordedVideo?>(null) }
                 var startupUpdateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
-                
-                // Auto-check for updates on app start if enabled
+
+                // Optional: only checks for updates when the user has enabled Auto Check Updates in Settings
                 LaunchedEffect(Unit) {
                     val autoCheck = settingsManager.autoCheckUpdatesFlow.first()
                     if (autoCheck) {
@@ -350,7 +351,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Startup Update Dialog
+                // Optional update dialog — only shown when Auto Check Updates is ON in Settings
                 startupUpdateInfo?.let { updateInfo ->
                     UpdateDialog(
                         updateInfo = updateInfo,
