@@ -120,6 +120,17 @@
                 <action android:name="com.gxdevs.screenx.PAIRING_CANCEL" />
             </intent-filter>
         </receiver>
+
+        <!-- FileProvider for exporting and sharing diagnostic log.txt -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
             
     </application>
 

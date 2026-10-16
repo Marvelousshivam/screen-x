@@ -438,7 +438,15 @@
     <string name="adb_pairing_notif_success_toast">ScreenX успішно сполучено!</string>
     <string name="adb_pairing_code_label_short">6-значний код</string>
     <string name="toast_mic_init_failed">Не вдалося ініціалізувати мікрофон — перевірте дозволи додатка.</string>
+    <string name="toast_mic_unavailable_internal_only">Мікрофон недоступний. Записується лише внутрішній звук.</string>
     <string name="toast_internal_audio_android10">Запис внутрішнього аудіо вимагає Android 10 або новішої версії.</string>
-    <string name="toast_mic_unavailable_internal_only">Мікрофон недоступний — запис лише внутрішнього звуку.</string>
     <string name="adb_pairing_port_placeholder">напр. 33625</string>
+
+    <!-- Diagnostics & Logs Export -->
+    <string name="section_diagnostics">ДІАГНОСТИКА ТА ЛОГИ</string>
+    <string name="setting_export_logs_title">Експорт діагностичних логів (log.txt)</string>
+    <string name="setting_export_logs_sub">Створити та надіслати log.txt для виявлення проблем орієнтації</string>
+    <string name="toast_exporting_logs">Формування діагностичного log.txt…</string>
+    <string name="toast_logs_ready">Діагностичний лог готовий до відправки</string>
+    <string name="toast_logs_failed">Не вдалося експортувати логи: %1$s</string>
 </resources>

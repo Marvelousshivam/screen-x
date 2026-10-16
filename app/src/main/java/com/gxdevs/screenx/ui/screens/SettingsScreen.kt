@@ -845,6 +845,32 @@ fun SettingsScreen(
                 }
             }
 
+            // 9. DIAGNOSTICS & SYSTEM LOGS
+            item {
+                Column {
+                    OrionSectionHeader(stringResource(R.string.section_diagnostics))
+                    OrionStackedGroupCard {
+                        OrionSettingsValueItem(
+                            icon = Lucide.Activity,
+                            title = stringResource(R.string.setting_export_logs_title),
+                            subtitle = stringResource(R.string.setting_export_logs_sub),
+                            value = "Share",
+                            position = StackPosition.Single,
+                            onClick = {
+                                coroutineScope.launch {
+                                    try {
+                                        Toast.makeText(context, context.getString(R.string.toast_exporting_logs), Toast.LENGTH_SHORT).show()
+                                        com.gxdevs.screenx.utils.DebugLogger.shareLogFile(context)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, context.getString(R.string.toast_logs_failed, e.message ?: "Unknown error"), Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
             item {
                 Spacer(modifier = Modifier.height(16.dp))
             }

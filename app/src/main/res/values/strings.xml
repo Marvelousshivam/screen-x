@@ -438,7 +438,15 @@
     <string name="adb_pairing_notif_success_toast">ScreenX Paired Successfully!</string>
     <string name="adb_pairing_code_label_short">6-digit code</string>
     <string name="toast_mic_init_failed">Microphone could not be initialized — check app permissions.</string>
+    <string name="toast_mic_unavailable_internal_only">Microphone unavailable. Recording internal audio only.</string>
     <string name="toast_internal_audio_android10">Internal audio capture requires Android 10 or newer.</string>
-    <string name="toast_mic_unavailable_internal_only">Microphone unavailable — recording internal audio only.</string>
     <string name="adb_pairing_port_placeholder">e.g. 33625</string>
+
+    <!-- Diagnostics & Logs Export -->
+    <string name="section_diagnostics">DIAGNOSTICS &amp; LOGS</string>
+    <string name="setting_export_logs_title">Export Diagnostic Logs (log.txt)</string>
+    <string name="setting_export_logs_sub">Generate and share in-depth log.txt to diagnose orientation &amp; device bugs</string>
+    <string name="toast_exporting_logs">Generating diagnostic log.txt…</string>
+    <string name="toast_logs_ready">Diagnostic log ready to share</string>
+    <string name="toast_logs_failed">Failed to export logs: %1$s</string>
 </resources>

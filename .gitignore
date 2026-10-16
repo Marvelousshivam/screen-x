@@ -37,6 +37,7 @@ key.properties
 
 # Kotlin
 .kotlin/
+.vscode/
 
 # Release artifacts
 **/release/

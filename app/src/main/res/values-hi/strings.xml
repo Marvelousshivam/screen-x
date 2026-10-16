@@ -438,7 +438,15 @@
     <string name="adb_pairing_notif_success_toast">ScreenX सफलतापूर्वक पेयर हो गया!</string>
     <string name="adb_pairing_code_label_short">6-अंकों का कोड</string>
     <string name="toast_mic_init_failed">माइक्रोफ़ोन प्रारंभ नहीं किया जा सका — ऐप अनुमतियाँ जांचें।</string>
+    <string name="toast_mic_unavailable_internal_only">माइक्रोफ़ोन अनुपलब्ध है। केवल आंतरिक ऑडियो रिकॉर्ड हो रहा है।</string>
     <string name="toast_internal_audio_android10">आंतरिक ऑडियो कैप्चर के लिए Android 10 या नया संस्करण आवश्यक है।</string>
-    <string name="toast_mic_unavailable_internal_only">माइक्रोफ़ोन अनुपलब्ध — केवल आंतरिक ऑडियो रिकॉर्ड किया जा रहा है।</string>
     <string name="adb_pairing_port_placeholder">जैसे 33625</string>
+
+    <!-- Diagnostics & Logs Export -->
+    <string name="section_diagnostics">डायग्नोस्टिक्स और लॉग्स</string>
+    <string name="setting_export_logs_title">डायग्नोस्टिक लॉग निर्यात करें (log.txt)</string>
+    <string name="setting_export_logs_sub">रोटेशन और डिवाइस समस्याओं को ठीक करने के लिए log.txt शेयर करें</string>
+    <string name="toast_exporting_logs">डायग्नोस्टिक log.txt तैयार हो रहा है…</string>
+    <string name="toast_logs_ready">डायग्नोस्टिक लॉग शेयर करने के लिए तैयार है</string>
+    <string name="toast_logs_failed">लॉग निर्यात करने में विफल: %1$s</string>
 </resources>

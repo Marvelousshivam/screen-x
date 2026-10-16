@@ -58,6 +58,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.gxdevs.screenx.R
 import com.gxdevs.screenx.utils.LocaleHelper
+import com.gxdevs.screenx.utils.DebugLogger
 import java.io.File
 import java.io.OutputStream
 import java.nio.ByteBuffer
@@ -309,6 +310,8 @@ class ScreenRecordService : LifecycleService() {
         val action = intent?.action
         when (action) {
             ACTION_START -> {
+                DebugLogger.i(TAG, "===> ACTION_START received (flags=$flags, startId=$startId)")
+                DebugLogger.logOrientationSnapshot(this, TAG, "ACTION_START - Pre Sequence")
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
                 val resultData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
@@ -621,6 +624,7 @@ class ScreenRecordService : LifecycleService() {
             val countdownSecs = settingsManager.countdownFlow.first()
             val keepScreenAwake = settingsManager.keepScreenAwakeFlow.first()
             val showPill = settingsManager.showStatusBarPillFlow.first()
+            DebugLogger.i(TAG, "startRecordingSequence: countdownSecs=$countdownSecs, keepScreenAwake=$keepScreenAwake, showPill=$showPill")
 
             if (keepScreenAwake) {
                 acquireWakeLock()
@@ -670,6 +674,9 @@ class ScreenRecordService : LifecycleService() {
                 val safeStorageStop = settingsManager.safeStorageStopFlow.first()
                 val safeStorageThresholdMb = settingsManager.safeStorageThresholdMbFlow.first()
                 val thresholdBytes = safeStorageThresholdMb * 1024L * 1024L
+
+                DebugLogger.i(TAG, "startRecording invoked: targetRes=$targetResolution, fps=$fps, bitrate=$bitrate, audioSource=$audioSource, orientationSetting=$orientationSetting")
+                DebugLogger.logOrientationSnapshot(this@ScreenRecordService, TAG, "startRecording - Display State")
 
                 // Safe Storage Pre-check: Ensure enough free storage before starting
                 if (safeStorageStop) {
@@ -749,6 +756,8 @@ class ScreenRecordService : LifecycleService() {
                 }
                 recordDensityDpi = if (screenDensityDpi > 0) screenDensityDpi else resources.displayMetrics.densityDpi.takeIf { it > 0 } ?: DisplayMetrics.DENSITY_DEFAULT
 
+                DebugLogger.i(TAG, "createVirtualDisplay: name='ScreenXDisplay', recordWidth=$recordWidth, recordHeight=$recordHeight, recordDensityDpi=$recordDensityDpi, surface=${mediaRecorder?.surface}")
+
                 // Virtual Display: VIRTUAL_DISPLAY_FLAG_PUBLIC as tested and verified working in v1.4.2
                 // Directly mirrors the exact recordWidth and recordHeight negotiated in setupMediaRecorder
                 virtualDisplay = mediaProjection?.createVirtualDisplay(
@@ -765,6 +774,7 @@ class ScreenRecordService : LifecycleService() {
                 // Start hardware video recorder and audio capture synchronously to prevent A/V timestamp offset
                 mediaRecorder?.start()
                 audioCaptureHelper?.start()
+                DebugLogger.i(TAG, "mediaRecorder.start() called successfully at $startTimeMs")
                 isRecording = true
                 isPaused = false
                 isMicMuted = (audioSource == "System")
@@ -839,6 +849,7 @@ class ScreenRecordService : LifecycleService() {
     }
 
     private fun setupMediaRecorder(fps: Int, bitrate: Int, audioSource: String, orientationSetting: String, sessionTime: Long) {
+        DebugLogger.logOrientationSnapshot(this, TAG, "setupMediaRecorder - Beginning")
         // Create temp output file
         tempVideoFile = File(cacheDir, "temp_video_$sessionTime.mp4")
         if (tempVideoFile?.exists() == true) {
@@ -885,6 +896,9 @@ class ScreenRecordService : LifecycleService() {
 
             val safeFps = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeFpsForResolution(dimensions.first, dimensions.second, fps)
             val safeBitrate = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeBitrate(bitrate)
+
+            DebugLogger.i(TAG, "setupMediaRecorder: raw setupWidth=$setupWidth, setupHeight=$setupHeight, orientationSetting=$orientationSetting -> negotiated recordWidth=$recordWidth, recordHeight=$recordHeight, safeFps=$safeFps, safeBitrate=$safeBitrate")
+            DebugLogger.i(TAG, "setupMediaRecorder: tempVideoFile=${tempVideoFile?.absolutePath}")
 
             // Setup Encoders
             setVideoEncoder(MediaRecorder.VideoEncoder.H264)
@@ -971,6 +985,7 @@ class ScreenRecordService : LifecycleService() {
 
         val finalW = if (targetW % 2 == 0) targetW else targetW - 1
         val finalH = if (targetH % 2 == 0) targetH else targetH - 1
+        DebugLogger.i(TAG, "getTargetDimensions: res=$resolutionSetting, rawW=$rawWidth, rawH=$rawHeight, orientPref=$orientationSetting, rotation=$rotation, isDevLandscape=$isDeviceLandscape, isLandscape=$isLandscape -> screenWidth=$screenWidth, screenHeight=$screenHeight, finalW=$finalW, finalH=$finalH")
         return Pair(maxOf(finalW, 2), maxOf(finalH, 2))
     }
 
@@ -1026,6 +1041,8 @@ class ScreenRecordService : LifecycleService() {
 
     private fun stopRecording(reason: String? = null) {
         if (!isRecording) return
+        DebugLogger.i(TAG, "stopRecording invoked: reason='$reason', wasRecording=$isRecording, duration=${recordingDurationMs}ms")
+        DebugLogger.logOrientationSnapshot(this, TAG, "stopRecording - Active Display State")
         val wasPaused = isPaused
         isRecording = false
         isPaused = false
@@ -1181,18 +1198,22 @@ class ScreenRecordService : LifecycleService() {
             val m = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
             muxer = m
             
+            DebugLogger.i(TAG, "mergeVideoAndAudio starting: videoSize=${videoFile.length()} bytes, audioSize=${audioFile.length()} bytes")
+
             // Preserve video orientation track matrix hint in remuxed MP4 header
             try {
                 val retriever = android.media.MediaMetadataRetriever()
                 retriever.setDataSource(videoFile.absolutePath)
                 val rotationStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
                 val rotationDegrees = rotationStr?.toIntOrNull() ?: 0
+                DebugLogger.i(TAG, "mergeVideoAndAudio: extracted rotationDegrees=$rotationDegrees from temp video")
                 if (rotationDegrees > 0) {
                     m.setOrientationHint(rotationDegrees)
+                    DebugLogger.i(TAG, "mergeVideoAndAudio: setOrientationHint applied: $rotationDegrees")
                 }
                 retriever.release()
             } catch (e: Exception) {
-                Log.w(TAG, "Could not extract or set orientation hint on muxer: ${e.message}")
+                DebugLogger.w(TAG, "Could not extract or set orientation hint on muxer: ${e.message}")
             }
             
             // Select video track
@@ -1318,6 +1339,7 @@ class ScreenRecordService : LifecycleService() {
     }
 
     private fun saveVideoToMediaStore(tempFile: File, resolution: String, durationMs: Long) {
+        DebugLogger.i(TAG, "saveVideoToMediaStore: tempFile=${tempFile.absolutePath}, size=${tempFile.length()} bytes, duration=${durationMs}ms, resolution=$resolution")
         val fileName = "ScreenX_${System.currentTimeMillis()}.mp4"
         val contentValues = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, fileName)

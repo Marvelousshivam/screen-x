@@ -438,7 +438,15 @@
     <string name="adb_pairing_notif_success_toast">ScreenX успешно сопряжен!</string>
     <string name="adb_pairing_code_label_short">6-значный код</string>
     <string name="toast_mic_init_failed">Не удалось инициализировать микрофон — проверьте разрешения приложения.</string>
+    <string name="toast_mic_unavailable_internal_only">Микрофон недоступен. Записывается только внутренний звук.</string>
     <string name="toast_internal_audio_android10">Запись внутреннего звука требует Android 10 или новее.</string>
-    <string name="toast_mic_unavailable_internal_only">Микрофон недоступен — запись только внутреннего звука.</string>
     <string name="adb_pairing_port_placeholder">напр. 33625</string>
+
+    <!-- Diagnostics & Logs Export -->
+    <string name="section_diagnostics">ДИАГНОСТИКА И ЛОГИ</string>
+    <string name="setting_export_logs_title">Экспорт диагностических логов (log.txt)</string>
+    <string name="setting_export_logs_sub">Создать и отправить log.txt для выявления проблем ориентации</string>
+    <string name="toast_exporting_logs">Формирование диагностического log.txt…</string>
+    <string name="toast_logs_ready">Диагностический лог готов к отправке</string>
+    <string name="toast_logs_failed">Не удалось экспортировать логи: %1$s</string>
 </resources>

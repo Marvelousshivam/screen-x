@@ -33,6 +33,7 @@ import java.util.Locale
 
 import com.gxdevs.screenx.R
 import com.gxdevs.screenx.utils.LocaleHelper
+import com.gxdevs.screenx.utils.DebugLogger
 
 /**
  * Foreground service that runs `screenrecord` via the ADB TCP connection.
@@ -198,6 +199,9 @@ class AdbRecordService : LifecycleService() {
             return
         }
 
+        DebugLogger.i(TAG, "===> ACTION_START_ADB received")
+        DebugLogger.logOrientationSnapshot(this, TAG, "AdbRecordService - Session Start")
+
         lifecycleScope.launch(Dispatchers.IO) {
             var recordingSuccess = false
             val savedFiles = mutableListOf<File>()
@@ -205,6 +209,7 @@ class AdbRecordService : LifecycleService() {
                 // 1. Verify ADB is paired
                 val isPaired = settingsManager.adbPairedFlow.first()
                 if (!isPaired) {
+                    DebugLogger.w(TAG, "Adb recording aborted: not paired")
                     showToast(getString(R.string.home_toast_stealth_not_paired))
                     return@launch
                 }
@@ -280,6 +285,7 @@ class AdbRecordService : LifecycleService() {
 
                     val cmd = "screenrecord --time-limit $remainingSecs$sizeParam ${outFile.absolutePath}"
                     Log.i(TAG, "Running: $cmd")
+                    DebugLogger.i(TAG, "Adb Part $partIndex: metrics=${metrics.widthPixels}x${metrics.heightPixels}, rotation=$rotation, isLandscape=$isLandscape, chosen=${width}x${height}, cmd='$cmd'")
 
                     val partStartTime = System.currentTimeMillis()
                     val outputLog = java.lang.StringBuilder()
@@ -301,6 +307,7 @@ class AdbRecordService : LifecycleService() {
 
                     val partDurationMs = System.currentTimeMillis() - partStartTime
                     Log.i(TAG, "screenrecord part $partIndex exited after ${partDurationMs}ms. Output: $outputLog")
+                    DebugLogger.i(TAG, "Adb Part $partIndex exited after ${partDurationMs}ms, fileExists=${outFile.exists()}, size=${outFile.length()} bytes, output='$outputLog'")
 
                     if (outFile.exists() && outFile.length() > 0) {
                         savedFiles.add(outFile)
@@ -372,6 +379,8 @@ class AdbRecordService : LifecycleService() {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun finish(success: Boolean) {
+        DebugLogger.i(TAG, "Adb finish() called: success=$success, userStopRequested=$userStopRequested")
+        DebugLogger.logOrientationSnapshot(this, TAG, "AdbRecordService - Finish")
         releaseWakeLock()
         isRecording = false
         _isRecordingFlow.value = false
