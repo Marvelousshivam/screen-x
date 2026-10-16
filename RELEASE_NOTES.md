@@ -1,57 +1,62 @@
-# ScreenX Release Notes — v1.7.2
+# ScreenX Release Notes — v1.8.0
 
-## 🌟 What's New in v1.7.2
+## 🌟 What's New in v1.8.0
 
-### 📱 Complete Auto-Rotation Fix (POCO X3 Pro, POCO X4 GT & Custom ROMs)
-* **Root Cause Resolved**:
-  * In versions after v1.4.2, dimension calculation had issues on devices like POCO X3 Pro (vayu), POCO X4 GT, Redmi, and custom ROMs (InfinityX, crDroid, LineageOS) where WindowManager metrics or background display queries reported portrait bounds (1080x2400) during landscape games, leading to portrait pillarboxing (black bars on top and bottom).
-* **Hard-Enforced Dimension Safeguards**:
-  * **Fail-Safe Orientation Detection**: Combines `Display.rotation` (90°/270°), system `Configuration.orientation`, and real-time window metrics.
-  * **Dimension-Swap Safeguard**: Hard-enforces `screenWidth = maxOf(w, h)` and `screenHeight = minOf(w, h)` whenever landscape is active, guaranteeing an encoder never allocates a vertical canvas during landscape gameplay regardless of misconfigured ROM metrics.
-  * **Stealth ADB Mode Parity**: Applied the identical dimension-swap constraint mapping to `/system/bin/screenrecord` execution in `AdbRecordService`.
-  * **MediaMuxer Metadata Hint Preservation**: Automatically preserves orientation track matrix hints in remuxed MP4 headers.
-  * **Simplified UI Options**: Kept clean and intuitive with exactly **Auto**, **Portrait**, and **Landscape**.
-
----
-
-### 🔄 Wireless Debugging Liveness & Auto-Reconnect Recovery
-* **Active TLS Socket Liveness Verification**:
-  * Fixed an issue where Wireless Debugging appeared connected even after Android OS dropped the socket due to inactivity or sleep.
-  * Added active connection health checks (`isConnectionAlive`) on background threads.
-* **Automatic mDNS Discovery Fallback**:
-  * When Wireless Debugging is restarted or toggled in Developer Options, ScreenX automatically falls back to mDNS auto-discovery when the saved port fails, eliminating the need to un-pair and re-pair.
+### 🔊 Speaker Audio Capture for Stealth (ADB) Recording
+* **Acoustic Speaker Capture Without System Dialog**:
+  * Android's internal `screenrecord` binary cannot record audio, and standard internal audio capture requires a visible system `MediaProjection` prompt. ScreenX now introduces high-fidelity acoustic speaker capture utilizing low-latency microphone DSP without triggering any screen-capture dialogs.
+* **Smart Volume Boost & Noise Clearing**:
+  * **Digital Pre-Amp Amplification**: Multiplies speaker audio output (2.5x gain) so game sound and app audio are loud and crisp.
+  * **Soft-Knee `tanh` Saturation Limiter**: Prevents digital clipping, distortion, and harsh peaks during intense sound effects.
+  * **Hardware Noise Suppression & Rumble High-Pass Filter**: Bypasses ambient room rumble and fan hum using Android's native hardware `NoiseSuppressor` combined with a second-order Butterworth high-pass filter.
+* **Lossless Audio-Video Muxing**:
+  * High-efficiency AAC audio stream is encoded in real-time and losslessly remuxed with the video track upon completion with synchronized PTS timestamps.
+* **Dedicated Settings Toggle**:
+  * Added switch in **Settings > Stealth Recording**: *"Record Audio from Speaker"* with instant permission handling.
 
 ---
 
-### 🎨 Update Dialog Bottom Sheet UI Polish
-* **Clean Action Hierarchy**:
-  * Resolved an issue where the "View on GitHub" button text was cramped in a 50/50 horizontal row, causing it to break into two lines and get vertically chopped.
-  * Restructured update dialog actions into a clean, un-cramped vertical stack:
-    * Primary **"Download & Install"** button (full width).
-    * Outlined **"View on GitHub"** button (full width) with single-line constraint and ellipsis overflow protection across all 5 localization languages (English, Spanish, Ukrainian, Russian, Hindi).
-    * Subtle **"Maybe Later"** dismiss button.
+### ♾️ Unlimited ADB Recording with Auto-Continue & Lossless Merge
+* **Bypass Android's 3-Minute Limit**:
+  * Android's `/system/bin/screenrecord` has a hard 3-minute cutoff. ScreenX now seamlessly continues recording past the 3-minute limit without any gap by automatically spinning up the next recording segment.
+* **Lossless Background Video Concatenation**:
+  * When recording stops, all video segments are losslessly joined into a single unified `ADB_*.mp4` file in the device gallery.
+* **Progress & Permission Notifications**:
+  * Added active progress notifications ("Merging X recording parts into a single video…" / "Finalizing and saving video to gallery…") keeping the user informed during file processing.
+* **Auto-Merge Switch in Settings**:
+  * Toggle *"Auto-Continue Past 3 Min & Merge"* to enable or disable automatic segment concatenation.
 
 ---
 
-### ⏱️ Notification Chronometer Continuity
-* **Preserve Elapsed Recording Time on Resume**:
-  * Resuming from pause now maintains the continuous elapsed session time instead of resetting the notification chronometer and status bar pill to 00:00.
+### 🛠️ In-Depth Diagnostic Logs Export (`log.txt`)
+* **One-Click Diagnostic Sharing**:
+  * Added **"Export Diagnostic Logs (log.txt)"** under **Settings > Diagnostics & Logs**.
+  * Logs comprehensive device metrics at every step: WindowManager metrics, physical display rotation (`ROTATION_0`, `ROTATION_90`, `ROTATION_270`), Sensor HAL orientation states, aspect ratio calculations, encoder dimensions, and ADB connection diagnostics.
+  * Easily export and share directly with developers to resolve device-specific custom ROM anomalies.
 
 ---
 
-### 🛡️ MediaStore Error Cleanup & System Safety
-* **No Orphaned Pending Videos**:
-  * Pending MediaStore URIs are immediately removed if writing fails, preventing 0-byte entries from cluttering galleries.
-* **Smart WakeLock Timeout**:
-  * Dynamically scaled the wake lock timeout to session duration + buffer (`TIME_LIMIT_SECS * 1000L + 30_000L`).
-* **Receiver Lifecycle Protection**:
-  * Guarded broadcast receivers against duplicate registrations across service restarts.
+### 📱 Orientation Simplification & Custom ROM Fixes
+* **Streamlined UI Options**:
+  * Removed confusing "Reverse Landscape" option; simplified orientation choices to **Auto**, **Portrait**, and **Landscape**.
+* **Hardened Custom ROM Display Dimension Safeguard**:
+  * Fixed landscape pillarboxing issues on devices like POCO X3 Pro (vayu) running custom ROMs (InfinityX 3.12, crDroid, LineageOS) where system bounds erroneously report portrait dimensions during landscape capture.
+
+---
+
+### 🌐 Multi-Language Localization
+* Added complete strings and descriptions for all new features across 5 languages:
+  * English (EN)
+  * Spanish (ES)
+  * Russian (RU)
+  * Ukrainian (UK)
+  * Hindi (HI)
 
 ---
 
 ## 📦 Artifact Details
 * **File**: `app-release.apk`
-* **Version**: `v1.7.2` (Build `12`)
+* **Version**: `v1.8.0` (Build `13`)
 * **Package**: `com.gxdevs.screenx`
 * **Output Path**: `app/build/outputs/apk/release/app-release.apk`
 * **Target SDK**: `37` (Android 15 / 16 ready)
