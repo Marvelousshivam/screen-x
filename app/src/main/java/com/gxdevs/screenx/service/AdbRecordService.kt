@@ -60,6 +60,7 @@ class AdbRecordService : LifecycleService() {
 
         const val ACTION_START_ADB = "com.gxdevs.screenx.action.START_ADB"
         const val ACTION_STOP_ADB  = "com.gxdevs.screenx.action.STOP_ADB"
+        const val EXTRA_CALLER_IS_LANDSCAPE = "extra_caller_is_landscape"
 
         /** screenrecord --time-limit in seconds. Stay under 180 so it saves cleanly. */
         const val TIME_LIMIT_SECS = 170
@@ -76,6 +77,13 @@ class AdbRecordService : LifecycleService() {
     @Volatile private var userStopRequested = false
     private var wakeLock: android.os.PowerManager.WakeLock? = null
     private var recordingStartTimeMs: Long = 0L
+
+    private var orientationListener: android.view.OrientationEventListener? = null
+    @Volatile var isSensorLandscape = false
+        private set
+    private var windowContext: Context? = null
+    var callerIsLandscape: Boolean = false
+        private set
 
     @Suppress("DEPRECATION")
     private fun acquireWakeLock() {
@@ -136,6 +144,37 @@ class AdbRecordService : LifecycleService() {
         settingsManager = SettingsManager(this)
         createNotificationChannel()
 
+        // Hardware sensor orientation detection
+        orientationListener = object : android.view.OrientationEventListener(this, android.hardware.SensorManager.SENSOR_DELAY_NORMAL) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return
+                val landscape = (orientation in 50..130) || (orientation in 230..310)
+                val portrait = (orientation in 0..40) || (orientation in 320..359) || (orientation in 140..220)
+                if (landscape) {
+                    isSensorLandscape = true
+                } else if (portrait) {
+                    isSensorLandscape = false
+                }
+            }
+        }
+        if (orientationListener?.canDetectOrientation() == true) {
+            orientationListener?.enable()
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val dm = getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+                val defDisp = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+                if (defDisp != null) {
+                    windowContext = createDisplayContext(defDisp).createWindowContext(
+                        android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "WindowContext creation failed: ${e.message}")
+            }
+        }
+
         if (!isScreenOffReceiverRegistered) {
             try {
                 val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
@@ -150,7 +189,10 @@ class AdbRecordService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
-            ACTION_START_ADB -> startAdbRecording()
+            ACTION_START_ADB -> {
+                callerIsLandscape = intent.getBooleanExtra(EXTRA_CALLER_IS_LANDSCAPE, false)
+                startAdbRecording()
+            }
             ACTION_STOP_ADB  -> stopAdbRecording()
         }
         return START_NOT_STICKY
@@ -267,10 +309,17 @@ class AdbRecordService : LifecycleService() {
                         ?: wm?.defaultDisplay
                     val rotation = display?.rotation ?: android.view.Surface.ROTATION_0
 
-                    val isLandscape = rotation == android.view.Surface.ROTATION_90 ||
-                            rotation == android.view.Surface.ROTATION_270 ||
-                            resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ||
-                            metrics.widthPixels > metrics.heightPixels
+                    val isDisplayLandscape = rotation == android.view.Surface.ROTATION_90 || rotation == android.view.Surface.ROTATION_270
+                    val isConfigLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                    val isWindowContextLandscape = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && windowContext != null) {
+                        try {
+                            val bounds = windowContext!!.getSystemService(android.view.WindowManager::class.java).currentWindowMetrics.bounds
+                            bounds.width() > bounds.height() || windowContext!!.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                        } catch (_: Exception) { false }
+                    } else false
+                    val isMetricsLandscape = metrics.widthPixels > metrics.heightPixels
+
+                    val isLandscape = isDisplayLandscape || isConfigLandscape || isWindowContextLandscape || isSensorLandscape || isMetricsLandscape || callerIsLandscape
 
                     val rawW = metrics.widthPixels.coerceAtLeast(720)
                     val rawH = metrics.heightPixels.coerceAtLeast(1280)
@@ -485,6 +534,10 @@ class AdbRecordService : LifecycleService() {
             } catch (_: Exception) {}
             isScreenOffReceiverRegistered = false
         }
+        try {
+            orientationListener?.disable()
+            orientationListener = null
+        } catch (_: Exception) {}
         super.onDestroy()
     }
 }

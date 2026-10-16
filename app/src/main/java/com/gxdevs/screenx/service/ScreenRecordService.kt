@@ -37,6 +37,7 @@ import android.os.StatFs
 import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
+import android.view.Display
 import android.view.WindowManager
 import android.view.Surface
 import android.content.res.Configuration
@@ -92,6 +93,7 @@ class ScreenRecordService : LifecycleService() {
         // Intent Extras
         const val EXTRA_RESULT_CODE = "extra_result_code"
         const val EXTRA_RESULT_DATA = "extra_result_data"
+        const val EXTRA_CALLER_IS_LANDSCAPE = "extra_caller_is_landscape"
 
         private val _isRecordingFlow = MutableStateFlow(false)
         val isRecordingFlow = _isRecordingFlow.asStateFlow()
@@ -123,6 +125,13 @@ class ScreenRecordService : LifecycleService() {
     private lateinit var windowManager: WindowManager
     private lateinit var projectionManager: MediaProjectionManager
     private lateinit var settingsManager: SettingsManager
+
+    private var orientationListener: android.view.OrientationEventListener? = null
+    @Volatile var isSensorLandscape = false
+        private set
+    private var windowContext: Context? = null
+    var callerIsLandscape: Boolean = false
+        private set
 
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
@@ -294,6 +303,39 @@ class ScreenRecordService : LifecycleService() {
         accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         createNotificationChannel()
 
+        // Hardware sensor orientation detection (works accurately across all custom ROMs and devices)
+        orientationListener = object : android.view.OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == ORIENTATION_UNKNOWN) return
+                // Check if device is held horizontally in landscape (left or right)
+                val landscape = (orientation in 50..130) || (orientation in 230..310)
+                val portrait = (orientation in 0..40) || (orientation in 320..359) || (orientation in 140..220)
+                if (landscape) {
+                    isSensorLandscape = true
+                } else if (portrait) {
+                    isSensorLandscape = false
+                }
+            }
+        }
+        if (orientationListener?.canDetectOrientation() == true) {
+            orientationListener?.enable()
+        }
+
+        // On Android 11+ (API 30+), create a WindowContext so window metrics track rotation accurately
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+                val defDisp = dm?.getDisplay(Display.DEFAULT_DISPLAY)
+                if (defDisp != null) {
+                    windowContext = createDisplayContext(defDisp).createWindowContext(
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "WindowContext creation failed: ${e.message}")
+            }
+        }
+
         val screenOffFilter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
         registerReceiver(screenOffReceiver, screenOffFilter)
 
@@ -310,7 +352,8 @@ class ScreenRecordService : LifecycleService() {
         val action = intent?.action
         when (action) {
             ACTION_START -> {
-                DebugLogger.i(TAG, "===> ACTION_START received (flags=$flags, startId=$startId)")
+                callerIsLandscape = intent.getBooleanExtra(EXTRA_CALLER_IS_LANDSCAPE, false)
+                DebugLogger.i(TAG, "===> ACTION_START received (flags=$flags, startId=$startId, callerIsLandscape=$callerIsLandscape)")
                 DebugLogger.logOrientationSnapshot(this, TAG, "ACTION_START - Pre Sequence")
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
                 val resultData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -871,25 +914,49 @@ class ScreenRecordService : LifecycleService() {
             // Set paths
             setOutputFile(tempVideoFile?.absolutePath)
 
-            // Setup dimensions (BUG-17 FIX: use currentWindowMetrics on API 30+ as in v1.4.2)
-            val setupWidth: Int
-            val setupHeight: Int
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val bounds = windowManager.currentWindowMetrics.bounds
-                val w = bounds.width().takeIf { it > 0 } ?: resources.displayMetrics.widthPixels.takeIf { it > 0 } ?: 1080
-                val h = bounds.height().takeIf { it > 0 } ?: resources.displayMetrics.heightPixels.takeIf { it > 0 } ?: 1920
-                setupWidth = w
-                setupHeight = h
+            // Multi-tier display and orientation resolution:
+            val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+            val display = dm?.getDisplay(Display.DEFAULT_DISPLAY)
+                ?: (getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
+
+            val metrics = DisplayMetrics()
+            if (display != null) {
+                display.getRealMetrics(metrics)
             } else {
-                val m = DisplayMetrics()
                 @Suppress("DEPRECATION")
-                windowManager.defaultDisplay.getRealMetrics(m)
-                val w = m.widthPixels.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels.takeIf { it > 0 } ?: 1080
-                val h = m.heightPixels.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels.takeIf { it > 0 } ?: 1920
-                setupWidth = w
-                setupHeight = h
+                windowManager.defaultDisplay.getRealMetrics(metrics)
             }
-            val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
+
+            var dispW = metrics.widthPixels.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels.takeIf { it > 0 } ?: 1080
+            var dispH = metrics.heightPixels.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels.takeIf { it > 0 } ?: 2460
+
+            val longDim = maxOf(dispW, dispH)
+            val shortDim = minOf(dispW, dispH)
+
+            // Determine landscape across all 6 diagnostic tiers:
+            val displayRotation = display?.rotation ?: Surface.ROTATION_0
+            val isDisplayLandscape = displayRotation == Surface.ROTATION_90 || displayRotation == Surface.ROTATION_270
+            val isConfigLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val isWindowContextLandscape = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && windowContext != null) {
+                try {
+                    val bounds = windowContext!!.getSystemService(WindowManager::class.java).currentWindowMetrics.bounds
+                    bounds.width() > bounds.height() || windowContext!!.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                } catch (_: Exception) { false }
+            } else false
+            val isMetricsLandscape = dispW > dispH
+
+            val isDeviceLandscape = isDisplayLandscape || isConfigLandscape || isWindowContextLandscape || isSensorLandscape || isMetricsLandscape || callerIsLandscape
+
+            val isLandscape = when (orientationSetting) {
+                "Landscape" -> true
+                "Portrait" -> false
+                else -> isDeviceLandscape // "Auto" mode
+            }
+
+            val setupWidth = if (isLandscape) longDim else shortDim
+            val setupHeight = if (isLandscape) shortDim else longDim
+
+            val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, isLandscape)
             recordWidth = dimensions.first
             recordHeight = dimensions.second
             setVideoSize(recordWidth, recordHeight)
@@ -897,7 +964,7 @@ class ScreenRecordService : LifecycleService() {
             val safeFps = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeFpsForResolution(dimensions.first, dimensions.second, fps)
             val safeBitrate = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeBitrate(bitrate)
 
-            DebugLogger.i(TAG, "setupMediaRecorder: raw setupWidth=$setupWidth, setupHeight=$setupHeight, orientationSetting=$orientationSetting -> negotiated recordWidth=$recordWidth, recordHeight=$recordHeight, safeFps=$safeFps, safeBitrate=$safeBitrate")
+            DebugLogger.i(TAG, "setupMediaRecorder: orientationSetting=$orientationSetting, isLandscape=$isLandscape (display=$isDisplayLandscape, config=$isConfigLandscape, winCtx=$isWindowContextLandscape, sensor=$isSensorLandscape, caller=$callerIsLandscape) -> recordWidth=$recordWidth, recordHeight=$recordHeight, safeFps=$safeFps, safeBitrate=$safeBitrate")
             DebugLogger.i(TAG, "setupMediaRecorder: tempVideoFile=${tempVideoFile?.absolutePath}")
 
             // Setup Encoders
@@ -931,35 +998,18 @@ class ScreenRecordService : LifecycleService() {
         }
     }
 
-    private fun getTargetDimensions(resolutionSetting: String, rawWidth: Int, rawHeight: Int, orientationSetting: String): Pair<Int, Int> {
-        val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
-        val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
-            ?: (getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
-        val rotation = display?.rotation ?: Surface.ROTATION_0
-
-        val isDeviceLandscape = rotation == Surface.ROTATION_90 || 
-                                rotation == Surface.ROTATION_270 ||
-                                resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ||
-                                rawWidth > rawHeight
-
-        val isLandscape = when (orientationSetting) {
-            "Portrait" -> false
-            "Landscape" -> true
-            else -> isDeviceLandscape
-        }
-
-        // Hard-validation of dimensions for custom ROMs (InfinityX / POCO X3 Pro safeguard):
-        // If landscape, width MUST be maxOf and height MUST be minOf.
-        // If portrait, width MUST be minOf and height MUST be maxOf.
-        val screenWidth = if (isLandscape) maxOf(rawWidth, rawHeight) else minOf(rawWidth, rawHeight)
-        val screenHeight = if (isLandscape) minOf(rawWidth, rawHeight) else maxOf(rawWidth, rawHeight)
+    private fun getTargetDimensions(resolutionSetting: String, setupWidth: Int, setupHeight: Int, isLandscape: Boolean): Pair<Int, Int> {
+        val longDim = maxOf(setupWidth, setupHeight)
+        val shortDim = minOf(setupWidth, setupHeight)
 
         if (resolutionSetting == "Original") {
-            // Must be even and strictly adhere to active orientation
-            val w = if (screenWidth % 2 == 0) screenWidth else screenWidth - 1
-            val h = if (screenHeight % 2 == 0) screenHeight else screenHeight - 1
-            return Pair(maxOf(w, 2), maxOf(h, 2))
+            val w = if (isLandscape) longDim else shortDim
+            val h = if (isLandscape) shortDim else longDim
+            val finalW = if (w % 2 == 0) w else w - 1
+            val finalH = if (h % 2 == 0) h else h - 1
+            return Pair(maxOf(finalW, 2), maxOf(finalH, 2))
         }
+
         val longSide = when (resolutionSetting) {
             "4K" -> 3840
             "1440p" -> 2560
@@ -969,23 +1019,16 @@ class ScreenRecordService : LifecycleService() {
             else -> 1280
         }
 
-        val minDim = minOf(screenWidth, screenHeight).coerceAtLeast(2).toFloat()
-        val maxDim = maxOf(screenWidth, screenHeight).coerceAtLeast(2).toFloat()
-        val aspectRatio = (minDim / maxDim).takeIf { it > 0f && !it.isNaN() } ?: 0.5625f
+        val minD = shortDim.coerceAtLeast(2).toFloat()
+        val maxD = longDim.coerceAtLeast(2).toFloat()
+        val aspectRatio = (minD / maxD).takeIf { it > 0f && !it.isNaN() } ?: 0.5625f
+        val shortSide = (longSide * aspectRatio).toInt()
 
-        val targetW: Int
-        val targetH: Int
-        if (isLandscape) {
-            targetW = longSide
-            targetH = (longSide * aspectRatio).toInt()
-        } else {
-            targetH = longSide
-            targetW = (longSide * aspectRatio).toInt()
-        }
+        val targetW = if (isLandscape) longSide else shortSide
+        val targetH = if (isLandscape) shortSide else longSide
 
         val finalW = if (targetW % 2 == 0) targetW else targetW - 1
         val finalH = if (targetH % 2 == 0) targetH else targetH - 1
-        DebugLogger.i(TAG, "getTargetDimensions: res=$resolutionSetting, rawW=$rawWidth, rawH=$rawHeight, orientPref=$orientationSetting, rotation=$rotation, isDevLandscape=$isDeviceLandscape, isLandscape=$isLandscape -> screenWidth=$screenWidth, screenHeight=$screenHeight, finalW=$finalW, finalH=$finalH")
         return Pair(maxOf(finalW, 2), maxOf(finalH, 2))
     }
 
@@ -1580,6 +1623,10 @@ class ScreenRecordService : LifecycleService() {
         storageMonitorJob = null
         try {
             sensorManager?.unregisterListener(sensorListener)
+        } catch (_: Exception) {}
+        try {
+            orientationListener?.disable()
+            orientationListener = null
         } catch (_: Exception) {}
         dismissFloatingControls()
         dismissBrushOverlay()

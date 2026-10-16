@@ -140,6 +140,13 @@ object DebugLogger {
             // 5. Standard DisplayMetrics
             val stdMetrics = context.resources.displayMetrics
             sb.append("• resources.displayMetrics: widthPixels=${stdMetrics.widthPixels}, heightPixels=${stdMetrics.heightPixels}, densityDpi=${stdMetrics.densityDpi}\n")
+
+            // 6. Service & Sensor Orientation State
+            if (context is com.gxdevs.screenx.service.ScreenRecordService) {
+                sb.append("• ScreenRecordService state: isSensorLandscape=${context.isSensorLandscape}, callerIsLandscape=${context.callerIsLandscape}\n")
+            } else if (context is com.gxdevs.screenx.service.AdbRecordService) {
+                sb.append("• AdbRecordService state: isSensorLandscape=${context.isSensorLandscape}, callerIsLandscape=${context.callerIsLandscape}\n")
+            }
             sb.append("═══════════════════════════════════════════════════════════════")
 
             log(tag, sb.toString())
