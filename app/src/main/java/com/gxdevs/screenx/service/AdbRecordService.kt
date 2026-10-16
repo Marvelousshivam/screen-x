@@ -256,8 +256,26 @@ class AdbRecordService : LifecycleService() {
                             wm.defaultDisplay.getRealMetrics(metrics)
                         }
                     }
-                    val width = metrics.widthPixels and 1.inv()
-                    val height = metrics.heightPixels and 1.inv()
+
+                    val dm = getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+                    val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+                        ?: wm?.defaultDisplay
+                    val rotation = display?.rotation ?: android.view.Surface.ROTATION_0
+
+                    val isLandscape = rotation == android.view.Surface.ROTATION_90 ||
+                            rotation == android.view.Surface.ROTATION_270 ||
+                            resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ||
+                            metrics.widthPixels > metrics.heightPixels
+
+                    val rawW = metrics.widthPixels.coerceAtLeast(720)
+                    val rawH = metrics.heightPixels.coerceAtLeast(1280)
+
+                    // Explicit constraint mapping for custom ROMs (InfinityX / POCO X3 Pro safeguard)
+                    val w = if (isLandscape) maxOf(rawW, rawH) else minOf(rawW, rawH)
+                    val h = if (isLandscape) minOf(rawW, rawH) else maxOf(rawW, rawH)
+
+                    val width = w and 1.inv()
+                    val height = h and 1.inv()
                     val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
 
                     val cmd = "screenrecord --time-limit $remainingSecs$sizeParam ${outFile.absolutePath}"

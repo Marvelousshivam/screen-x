@@ -2,14 +2,15 @@
 
 ## 🌟 What's New in v1.7.2
 
-### 📱 Restored Exact v1.4.2 Auto-Rotation & Window Metrics (POCO & Xiaomi Fix)
+### 📱 Complete Auto-Rotation Fix (POCO X3 Pro, POCO X4 GT & Custom ROMs)
 * **Root Cause Resolved**:
-  * In versions after v1.4.2, dimension calculation had been refactored to rely on background `Display.rotation` queries and forced `minDim`/`maxDim` constraints. On devices like the POCO X3 Pro, POCO X4 GT, Redmi, and Xiaomi devices running MIUI/HyperOS, `Display.rotation` inside a background service always returned `0`, incorrectly forcing recordings into portrait mode (`1080x2400`) and causing letterboxed/squished output.
-* **Exact v1.4.2 Proven Mechanics Restored**:
-  * Restored the direct `windowManager.currentWindowMetrics.bounds` rotation-aware query on Android 11+ (API 30+) and real display metrics on earlier APIs.
-  * Reinstated the clean `getTargetDimensions` aspect-ratio scaling from v1.4.2 (`isLandscape = screenWidth > screenHeight`).
-  * Reverted the `VirtualDisplay` flags to `DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC`, which reliably adapts to device rotation across all OEM compositors without forcing portrait letterboxing.
-  * Restored matching window metrics calculation for ADB stealth recording in `AdbRecordService`.
+  * In versions after v1.4.2, dimension calculation had issues on devices like POCO X3 Pro (vayu), POCO X4 GT, Redmi, and custom ROMs (InfinityX, crDroid, LineageOS) where WindowManager metrics or background display queries reported portrait bounds (1080x2400) during landscape games, leading to portrait pillarboxing (black bars on top and bottom).
+* **Hard-Enforced Dimension Safeguards**:
+  * **Fail-Safe Orientation Detection**: Combines `Display.rotation` (90°/270°), system `Configuration.orientation`, and real-time window metrics.
+  * **Dimension-Swap Safeguard**: Hard-enforces `screenWidth = maxOf(w, h)` and `screenHeight = minOf(w, h)` whenever landscape is active, guaranteeing an encoder never allocates a vertical canvas during landscape gameplay regardless of misconfigured ROM metrics.
+  * **Stealth ADB Mode Parity**: Applied the identical dimension-swap constraint mapping to `/system/bin/screenrecord` execution in `AdbRecordService`.
+  * **MediaMuxer Metadata Hint Preservation**: Automatically preserves orientation track matrix hints in remuxed MP4 headers.
+  * **Simplified UI Options**: Kept clean and intuitive with exactly **Auto**, **Portrait**, and **Landscape**.
 
 ---
 

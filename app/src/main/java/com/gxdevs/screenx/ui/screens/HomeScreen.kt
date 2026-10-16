@@ -457,7 +457,11 @@ fun HomeScreen(
                                 "Portrait" -> Lucide.Smartphone
                                 else -> Lucide.Tablet
                             },
-                            label = orientation,
+                            label = when (orientation) {
+                                "Portrait" -> stringResource(R.string.orientation_portrait)
+                                "Landscape" -> stringResource(R.string.orientation_landscape)
+                                else -> stringResource(R.string.orientation_auto)
+                            },
                             onClick = {
                                 val nextOri = when (orientation) {
                                     "Auto" -> "Portrait"
@@ -1046,7 +1050,11 @@ fun HomeScreen(
                             }
                             Column {
                                 Text(
-                                    text = if (orientation == "Auto") stringResource(R.string.auto_rotate) else orientation,
+                                    text = when (orientation) {
+                                        "Portrait" -> stringResource(R.string.orientation_portrait)
+                                        "Landscape" -> stringResource(R.string.orientation_landscape)
+                                        else -> stringResource(R.string.auto_rotate)
+                                    },
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,

@@ -917,20 +917,33 @@ class ScreenRecordService : LifecycleService() {
         }
     }
 
-    private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
+    private fun getTargetDimensions(resolutionSetting: String, rawWidth: Int, rawHeight: Int, orientationSetting: String): Pair<Int, Int> {
+        val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+        val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+            ?: (getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
+        val rotation = display?.rotation ?: Surface.ROTATION_0
+
+        val isDeviceLandscape = rotation == Surface.ROTATION_90 || 
+                                rotation == Surface.ROTATION_270 ||
+                                resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ||
+                                rawWidth > rawHeight
+
         val isLandscape = when (orientationSetting) {
             "Portrait" -> false
             "Landscape" -> true
-            else -> (screenWidth > screenHeight) || 
-                    (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+            else -> isDeviceLandscape
         }
+
+        // Hard-validation of dimensions for custom ROMs (InfinityX / POCO X3 Pro safeguard):
+        // If landscape, width MUST be maxOf and height MUST be minOf.
+        // If portrait, width MUST be minOf and height MUST be maxOf.
+        val screenWidth = if (isLandscape) maxOf(rawWidth, rawHeight) else minOf(rawWidth, rawHeight)
+        val screenHeight = if (isLandscape) minOf(rawWidth, rawHeight) else maxOf(rawWidth, rawHeight)
 
         if (resolutionSetting == "Original") {
             // Must be even and strictly adhere to active orientation
-            val rawW = if (isLandscape) maxOf(screenWidth, screenHeight) else minOf(screenWidth, screenHeight)
-            val rawH = if (isLandscape) minOf(screenWidth, screenHeight) else maxOf(screenWidth, screenHeight)
-            val w = if (rawW % 2 == 0) rawW else rawW - 1
-            val h = if (rawH % 2 == 0) rawH else rawH - 1
+            val w = if (screenWidth % 2 == 0) screenWidth else screenWidth - 1
+            val h = if (screenHeight % 2 == 0) screenHeight else screenHeight - 1
             return Pair(maxOf(w, 2), maxOf(h, 2))
         }
         val longSide = when (resolutionSetting) {
@@ -1167,6 +1180,20 @@ class ScreenRecordService : LifecycleService() {
             extractorAudio.setDataSource(audioFile.absolutePath)
             val m = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
             muxer = m
+            
+            // Preserve video orientation track matrix hint in remuxed MP4 header
+            try {
+                val retriever = android.media.MediaMetadataRetriever()
+                retriever.setDataSource(videoFile.absolutePath)
+                val rotationStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                val rotationDegrees = rotationStr?.toIntOrNull() ?: 0
+                if (rotationDegrees > 0) {
+                    m.setOrientationHint(rotationDegrees)
+                }
+                retriever.release()
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not extract or set orientation hint on muxer: ${e.message}")
+            }
             
             // Select video track
             var videoTrackIndex = -1
