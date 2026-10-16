@@ -190,7 +190,7 @@ fun UpdateDialog(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 120.dp, max = 340.dp),
+                        .heightIn(min = 100.dp, max = 260.dp),
                     shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                     border = BorderStroke(
@@ -209,7 +209,7 @@ fun UpdateDialog(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Action Buttons matching ScreenX styling
             Column(
@@ -238,7 +238,8 @@ fun UpdateDialog(
                         text = stringResource(R.string.update_dialog_download_btn),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        maxLines = 1
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
 
@@ -246,7 +247,7 @@ fun UpdateDialog(
                     onClick = onViewGitHub,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp),
+                        .height(48.dp),
                     shape = RoundedCornerShape(14.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -266,9 +267,10 @@ fun UpdateDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.update_dialog_github_btn),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
+                        softWrap = false,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
@@ -277,8 +279,8 @@ fun UpdateDialog(
                     onClick = onDismiss,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(40.dp),
-                    shape = RoundedCornerShape(14.dp)
+                        .height(38.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.update_dialog_later_btn),

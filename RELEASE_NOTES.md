@@ -1,4 +1,4 @@
-# ScreenX Release Notes — v1.8.0
+# ScreenX Release Notes - v1.8.0
 
 ## 🌟 What's New in v1.8.0
 
@@ -22,17 +22,9 @@
 * **Lossless Background Video Concatenation**:
   * When recording stops, all video segments are losslessly joined into a single unified `ADB_*.mp4` file in the device gallery.
 * **Progress & Permission Notifications**:
-  * Added active progress notifications ("Merging X recording parts into a single video…" / "Finalizing and saving video to gallery…") keeping the user informed during file processing.
+  * Added active progress notifications ("Merging X recording parts into a single video..." / "Finalizing and saving video to gallery...") keeping the user informed during file processing.
 * **Auto-Merge Switch in Settings**:
   * Toggle *"Auto-Continue Past 3 Min & Merge"* to enable or disable automatic segment concatenation.
-
----
-
-### 🛠️ In-Depth Diagnostic Logs Export (`log.txt`)
-* **One-Click Diagnostic Sharing**:
-  * Added **"Export Diagnostic Logs (log.txt)"** under **Settings > Diagnostics & Logs**.
-  * Logs comprehensive device metrics at every step: WindowManager metrics, physical display rotation (`ROTATION_0`, `ROTATION_90`, `ROTATION_270`), Sensor HAL orientation states, aspect ratio calculations, encoder dimensions, and ADB connection diagnostics.
-  * Easily export and share directly with developers to resolve device-specific custom ROM anomalies.
 
 ---
 
@@ -40,7 +32,7 @@
 * **Streamlined UI Options**:
   * Removed confusing "Reverse Landscape" option; simplified orientation choices to **Auto**, **Portrait**, and **Landscape**.
 * **Hardened Custom ROM Display Dimension Safeguard**:
-  * Fixed landscape pillarboxing issues on devices like POCO X3 Pro (vayu) running custom ROMs (InfinityX 3.12, crDroid, LineageOS) where system bounds erroneously report portrait dimensions during landscape capture.
+  * Fixed landscape pillarboxing issues on certain devices and custom ROMs where system bounds erroneously report portrait dimensions during landscape capture.
 
 ---
 

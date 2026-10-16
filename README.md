@@ -87,7 +87,7 @@ ScreenX offers two completely distinct capture pipelines to fit any recording si
   * **Hardware Noise Suppression & Rumble Filter:** Cuts out ambient room hum and fan vibrations.
   * **Lossless Muxing:** Remuxes real-time AAC audio with the video track with synchronized PTS timestamps.
 * <img src="https://api.iconify.design/fa6-solid/infinity.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/infinity.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Auto-Continue Past 3 Min & Merge:** Bypasses Android's hardcoded 3-minute `screenrecord` limit. When the segment expires, ScreenX automatically spins up the next recording segment without gaps and losslessly joins all parts into a single video file upon stopping.
-* <img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **1-Tap Notification Pairing:** Pair your device with Android 11+ Wireless Debugging easily—tap Reply directly on the ScreenX notification and submit your 6-digit code.
+* <img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **1-Tap Notification Pairing:** Pair your device with Android 11+ Wireless Debugging easily: tap Reply directly on the ScreenX notification and submit your 6-digit code.
 * <img src="https://api.iconify.design/fa6-solid/wifi.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/wifi.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Zero-Config mDNS Discovery:** Automatically scans and resolves wireless debugging ports dynamically when Wi-Fi or developer options toggle.
 
 > [!IMPORTANT]
@@ -99,8 +99,8 @@ ScreenX offers two completely distinct capture pipelines to fit any recording si
 > Crystal-clear video output tailored to your display hardware.
 
 * <img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Flexible Settings:** Customize resolutions (720p, 1080p, 1440p+), frame rates (30, 60, 90, 120 FPS), and bitrates (up to 24+ Mbps).
-* <img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Hardened Orientation Safeguards (Custom ROM / POCO Fix):**
-  * Resolves landscape pillarboxing and upside-down bugs on POCO X3 Pro (vayu), POCO X4 GT, and custom ROMs (InfinityX, crDroid, LineageOS) where window metrics report portrait bounds during landscape capture.
+* <img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Hardened Orientation Safeguards (Custom ROM Fix):**
+  * Resolves landscape pillarboxing and upside-down bugs on affected devices and custom ROMs (InfinityX, crDroid, LineageOS, etc.) where window metrics report portrait bounds during landscape capture.
   * Hard-enforces `screenWidth = maxOf(w, h)` and `screenHeight = minOf(w, h)` during landscape gameplay.
   * Simplified, intuitive orientation options: **Auto**, **Portrait**, and **Landscape**.
 
@@ -137,13 +137,6 @@ ScreenX offers two completely distinct capture pipelines to fit any recording si
 
 * <img src="https://api.iconify.design/fa6-solid/film.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/film.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Lossless Video Trimming:** Quick start-point and end-point trimming using MediaExtractor and MediaMuxer without re-encoding quality loss.
 * <img src="https://api.iconify.design/fa6-solid/photo-film.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/photo-film.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Built-In Gallery:** Browse screenshots and video recordings with file details, thumbnail previews, and batch deletion.
-
----
-
-### <img src="https://api.iconify.design/fa6-solid/bug.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Diagnostics" /><img src="https://api.iconify.design/fa6-solid/bug.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Diagnostics" /> In-Depth Diagnostic Logs (`log.txt`)
-> Resolve device-specific issues instantly with comprehensive logs.
-
-* Under **Settings > Diagnostics & Logs**, export a structured `log.txt` capturing physical display rotation, WindowManager metrics, sensor states, aspect ratio calculations, encoder parameters, and ADB connection status to diagnose ROM-specific anomalies.
 
 ---
 
@@ -207,7 +200,6 @@ screen-x
 │   │       └── Type.kt                # Typography styles
 │   │
 │   ├── utils/
-│   │   ├── DebugLogger.kt             # Structured diagnostic logging engine
 │   │   ├── DeviceCapabilitiesHelper.kt # Hardware refresh rate, resolutions & metrics
 │   │   ├── LocaleHelper.kt            # Runtime language configuration helper
 │   │   ├── NetworkUtils.kt            # Network & Wi-Fi state helpers
@@ -250,8 +242,8 @@ Download the latest pre-compiled signed APK directly from [GitHub Releases](http
 * [x] **Stealth Recording Mode:** Background rootless capture without app-level recording alerts.
 * [x] **Acoustic Speaker Audio Capture for Stealth:** Low-latency speaker audio capture with hardware noise suppression and volume boost.
 * [x] **Unlimited ADB Recording & Auto-Merge:** Multi-segment continuous recording past the 3-minute limit.
-* [x] **Hardware Orientation Safeguards:** Fix portrait pillarboxing on POCO X3 Pro and custom ROMs.
-* [x] **One-Click Diagnostic Logs (`log.txt`):** Export device metrics and sensor states for fast debugging.
+* [x] **Hardware Orientation Safeguards:** Fix portrait pillarboxing on affected devices and custom ROMs.
+* [ ] <img src="https://api.iconify.design/fa6-solid/shield-halved.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/shield-halved.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Root Device Ultra Powers (Bypass FLAG_SECURE) [Coming Soon]:** Native Root / KernelSU / Magisk / APatch integration hooking into SurfaceFlinger and WindowManager to record protected views, banking apps, and DRM media without black screen restrictions.
 * [ ] **Camera Overlay (Facecam):** Floating front/back camera bubble with pinch-to-resize and custom shapes.
 * [ ] **GIF Exporter:** Export short recordings directly to lightweight animated `.gif` files.
 
