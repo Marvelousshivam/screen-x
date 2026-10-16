@@ -738,14 +738,36 @@ class ScreenRecordService : LifecycleService() {
                     audioCaptureHelper = null
                 }
 
-                // Virtual Display: VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR ensures continuous hardware compositor mirroring,
-                // fixing stuttering and dropped frames on Realme UI (Realme 5 Pro / Q) and MIUI (Redmi Note 8 Pro).
+                // Metrics: exact working implementation from v1.4.2
+                val screenWidth: Int
+                val screenHeight: Int
+                val screenDensityDpi: Int
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val bounds = windowManager.currentWindowMetrics.bounds
+                    screenWidth = bounds.width()
+                    screenHeight = bounds.height()
+                    screenDensityDpi = resources.configuration.densityDpi
+                } else {
+                    val metrics = DisplayMetrics()
+                    @Suppress("DEPRECATION")
+                    windowManager.defaultDisplay.getRealMetrics(metrics)
+                    screenWidth = metrics.widthPixels
+                    screenHeight = metrics.heightPixels
+                    screenDensityDpi = metrics.densityDpi
+                }
+
+                val dimensions = getTargetDimensions(targetResolution, screenWidth, screenHeight, orientationSetting)
+                recordWidth = dimensions.first
+                recordHeight = dimensions.second
+                recordDensityDpi = screenDensityDpi
+
+                // Virtual Display: VIRTUAL_DISPLAY_FLAG_PUBLIC as tested and verified working in v1.4.2
                 virtualDisplay = mediaProjection?.createVirtualDisplay(
                     "ScreenXDisplay",
                     recordWidth,
                     recordHeight,
                     recordDensityDpi,
-                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
                     mediaRecorder?.surface,
                     null,
                     null
@@ -849,12 +871,23 @@ class ScreenRecordService : LifecycleService() {
             // Set paths
             setOutputFile(tempVideoFile?.absolutePath)
 
-            // Setup dimensions
-            val (setupWidth, setupHeight, densityDpi) = getScreenDimensions(orientationSetting)
+            // Setup dimensions (BUG-17 FIX: use currentWindowMetrics on API 30+ as in v1.4.2)
+            val setupWidth: Int
+            val setupHeight: Int
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val bounds = windowManager.currentWindowMetrics.bounds
+                setupWidth = bounds.width()
+                setupHeight = bounds.height()
+            } else {
+                val m = DisplayMetrics()
+                @Suppress("DEPRECATION")
+                windowManager.defaultDisplay.getRealMetrics(m)
+                setupWidth = m.widthPixels
+                setupHeight = m.heightPixels
+            }
             val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
             recordWidth = dimensions.first
             recordHeight = dimensions.second
-            recordDensityDpi = densityDpi
             setVideoSize(recordWidth, recordHeight)
 
             val safeFps = com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getSafeFpsForResolution(dimensions.first, dimensions.second, fps)
@@ -891,67 +924,19 @@ class ScreenRecordService : LifecycleService() {
         }
     }
 
-    private fun getScreenDimensions(orientationSetting: String): Triple<Int, Int, Int> {
-        val dm = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
-        val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
-            ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDisplay(this)
-
-        val metrics = DisplayMetrics()
-        if (display != null) {
-            display.getRealMetrics(metrics)
-        } else {
-            @Suppress("DEPRECATION")
-            windowManager.defaultDisplay.getRealMetrics(metrics)
-        }
-
-        var densityDpi = metrics.densityDpi
-        if (densityDpi <= 0) densityDpi = resources.configuration.densityDpi
-        if (densityDpi <= 0) densityDpi = 320
-
-        var rawW = metrics.widthPixels
-        var rawH = metrics.heightPixels
-        if (rawW <= 0 || rawH <= 0) {
-            rawW = resources.displayMetrics.widthPixels
-            rawH = resources.displayMetrics.heightPixels
-        }
-        val minDim = minOf(rawW, rawH).coerceAtLeast(720)
-        val maxDim = maxOf(rawW, rawH).coerceAtLeast(1280)
-
-        // Device orientation detection: use only hardware display rotation.
-        // On MIUI/HyperOS devices (POCO X3 Pro, X4 GT, Redmi, etc.), configuration.orientation
-        // and raw pixel metrics can be stale/incorrect inside a background service.
-        // display.rotation is the sole reliable hardware-level signal.
-        val rot = display?.rotation ?: Surface.ROTATION_0
-        val isDeviceLandscape = rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270
-
-        val isLandscape = when (orientationSetting) {
-            "Landscape" -> true
-            "Portrait" -> false
-            else -> isDeviceLandscape
-        }
-
-        val screenW = if (isLandscape) maxDim else minDim
-        val screenH = if (isLandscape) minDim else maxDim
-
-        return Triple(screenW, screenH, densityDpi)
-    }
-
     private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
-        val minDim = minOf(screenWidth, screenHeight).coerceAtLeast(720)
-        val maxDim = maxOf(screenWidth, screenHeight).coerceAtLeast(1280)
+        if (resolutionSetting == "Original") {
+            // Must be even
+            val w = if (screenWidth % 2 == 0) screenWidth else screenWidth - 1
+            val h = if (screenHeight % 2 == 0) screenHeight else screenHeight - 1
+            return Pair(w, h)
+        }
 
         val isLandscape = when (orientationSetting) {
-            "Landscape" -> true
             "Portrait" -> false
+            "Landscape" -> true
             else -> screenWidth > screenHeight
         }
-
-        if (resolutionSetting == "Original") {
-            val rawW = if (isLandscape) maxDim else minDim
-            val rawH = if (isLandscape) minDim else maxDim
-            return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(rawW, rawH)
-        }
-
         val longSide = when (resolutionSetting) {
             "4K" -> 3840
             "1440p" -> 2560
@@ -961,13 +946,21 @@ class ScreenRecordService : LifecycleService() {
             else -> 1280
         }
 
-        val aspectRatio = if (maxDim > 0) minDim.toFloat() / maxDim.toFloat() else 0.5625f
-        val shortSide = (longSide * aspectRatio).toInt()
+        val targetW: Int
+        val targetH: Int
+        if (isLandscape) {
+            targetW = longSide
+            val aspectRatio = minOf(screenWidth, screenHeight).toFloat() / maxOf(screenWidth, screenHeight).toFloat()
+            targetH = (longSide * aspectRatio).toInt()
+        } else {
+            targetH = longSide
+            val aspectRatio = minOf(screenWidth, screenHeight).toFloat() / maxOf(screenWidth, screenHeight).toFloat()
+            targetW = (longSide * aspectRatio).toInt()
+        }
 
-        val targetW = if (isLandscape) longSide else shortSide
-        val targetH = if (isLandscape) shortSide else longSide
-
-        return com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getAlignedDimensions(targetW, targetH)
+        val finalW = if (targetW % 2 == 0) targetW else targetW - 1
+        val finalH = if (targetH % 2 == 0) targetH else targetH - 1
+        return Pair(finalW, finalH)
     }
 
     private fun pauseRecording() {

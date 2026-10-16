@@ -229,36 +229,21 @@ class AdbRecordService : LifecycleService() {
                 )
                 dir.mkdirs()
 
-                // Calculate display metrics and orientation for --size
-                val dm = getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
-                val display = dm?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+                // Calculate display metrics for --size (exact working implementation from v1.4.2)
+                val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
                 val metrics = android.util.DisplayMetrics()
-                if (display != null) {
-                    display.getRealMetrics(metrics)
-                } else {
-                    val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
-                    @Suppress("DEPRECATION")
-                    wm?.defaultDisplay?.getRealMetrics(metrics)
+                if (wm != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        val bounds = wm.maximumWindowMetrics.bounds
+                        metrics.widthPixels = bounds.width()
+                        metrics.heightPixels = bounds.height()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        wm.defaultDisplay.getRealMetrics(metrics)
+                    }
                 }
-
-                val rot = display?.rotation ?: android.view.Surface.ROTATION_0
-                // Use only hardware display rotation for landscape detection.
-                // On MIUI/HyperOS devices (POCO X3 Pro, X4 GT, Redmi, etc.), resources.configuration.orientation
-                // and metrics.widthPixels can be stale/wrong inside a background service — the display.rotation
-                // is the only reliable hardware-level signal. This matches the working behaviour from v1.6.0.
-                val isDeviceLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
-
-                var rawW = metrics.widthPixels
-                var rawH = metrics.heightPixels
-                if (rawW <= 0 || rawH <= 0) {
-                    rawW = resources.displayMetrics.widthPixels
-                    rawH = resources.displayMetrics.heightPixels
-                }
-                val minDim = minOf(rawW, rawH).coerceAtLeast(720)
-                val maxDim = maxOf(rawW, rawH).coerceAtLeast(1280)
-
-                val width = (if (isDeviceLandscape) maxDim else minDim) and 1.inv()
-                val height = (if (isDeviceLandscape) minDim else maxDim) and 1.inv()
+                val width = metrics.widthPixels and 1.inv()
+                val height = metrics.heightPixels and 1.inv()
                 val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
 
                 val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
