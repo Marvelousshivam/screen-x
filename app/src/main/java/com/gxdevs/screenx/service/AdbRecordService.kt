@@ -234,7 +234,7 @@ class AdbRecordService : LifecycleService() {
                 val metrics = android.util.DisplayMetrics()
                 if (wm != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        val bounds = wm.maximumWindowMetrics.bounds
+                        val bounds = wm.currentWindowMetrics.bounds
                         metrics.widthPixels = bounds.width()
                         metrics.heightPixels = bounds.height()
                     } else {

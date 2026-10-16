@@ -738,30 +738,19 @@ class ScreenRecordService : LifecycleService() {
                     audioCaptureHelper = null
                 }
 
-                // Metrics: exact working implementation from v1.4.2
-                val screenWidth: Int
-                val screenHeight: Int
-                val screenDensityDpi: Int
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    val bounds = windowManager.currentWindowMetrics.bounds
-                    screenWidth = bounds.width()
-                    screenHeight = bounds.height()
-                    screenDensityDpi = resources.configuration.densityDpi
+                // Screen density with robust fallback (must be > 0 for VirtualDisplay)
+                val screenDensityDpi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    resources.configuration.densityDpi
                 } else {
                     val metrics = DisplayMetrics()
                     @Suppress("DEPRECATION")
                     windowManager.defaultDisplay.getRealMetrics(metrics)
-                    screenWidth = metrics.widthPixels
-                    screenHeight = metrics.heightPixels
-                    screenDensityDpi = metrics.densityDpi
+                    metrics.densityDpi
                 }
-
-                val dimensions = getTargetDimensions(targetResolution, screenWidth, screenHeight, orientationSetting)
-                recordWidth = dimensions.first
-                recordHeight = dimensions.second
-                recordDensityDpi = screenDensityDpi
+                recordDensityDpi = if (screenDensityDpi > 0) screenDensityDpi else resources.displayMetrics.densityDpi.takeIf { it > 0 } ?: DisplayMetrics.DENSITY_DEFAULT
 
                 // Virtual Display: VIRTUAL_DISPLAY_FLAG_PUBLIC as tested and verified working in v1.4.2
+                // Directly mirrors the exact recordWidth and recordHeight negotiated in setupMediaRecorder
                 virtualDisplay = mediaProjection?.createVirtualDisplay(
                     "ScreenXDisplay",
                     recordWidth,
@@ -876,14 +865,18 @@ class ScreenRecordService : LifecycleService() {
             val setupHeight: Int
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val bounds = windowManager.currentWindowMetrics.bounds
-                setupWidth = bounds.width()
-                setupHeight = bounds.height()
+                val w = bounds.width().takeIf { it > 0 } ?: resources.displayMetrics.widthPixels.takeIf { it > 0 } ?: 1080
+                val h = bounds.height().takeIf { it > 0 } ?: resources.displayMetrics.heightPixels.takeIf { it > 0 } ?: 1920
+                setupWidth = w
+                setupHeight = h
             } else {
                 val m = DisplayMetrics()
                 @Suppress("DEPRECATION")
                 windowManager.defaultDisplay.getRealMetrics(m)
-                setupWidth = m.widthPixels
-                setupHeight = m.heightPixels
+                val w = m.widthPixels.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels.takeIf { it > 0 } ?: 1080
+                val h = m.heightPixels.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels.takeIf { it > 0 } ?: 1920
+                setupWidth = w
+                setupHeight = h
             }
             val dimensions = getTargetDimensions(targetResolution, setupWidth, setupHeight, orientationSetting)
             recordWidth = dimensions.first
@@ -929,7 +922,7 @@ class ScreenRecordService : LifecycleService() {
             // Must be even
             val w = if (screenWidth % 2 == 0) screenWidth else screenWidth - 1
             val h = if (screenHeight % 2 == 0) screenHeight else screenHeight - 1
-            return Pair(w, h)
+            return Pair(maxOf(w, 2), maxOf(h, 2))
         }
 
         val isLandscape = when (orientationSetting) {
@@ -946,21 +939,23 @@ class ScreenRecordService : LifecycleService() {
             else -> 1280
         }
 
+        val minDim = minOf(screenWidth, screenHeight).coerceAtLeast(2).toFloat()
+        val maxDim = maxOf(screenWidth, screenHeight).coerceAtLeast(2).toFloat()
+        val aspectRatio = (minDim / maxDim).takeIf { it > 0f && !it.isNaN() } ?: 0.5625f
+
         val targetW: Int
         val targetH: Int
         if (isLandscape) {
             targetW = longSide
-            val aspectRatio = minOf(screenWidth, screenHeight).toFloat() / maxOf(screenWidth, screenHeight).toFloat()
             targetH = (longSide * aspectRatio).toInt()
         } else {
             targetH = longSide
-            val aspectRatio = minOf(screenWidth, screenHeight).toFloat() / maxOf(screenWidth, screenHeight).toFloat()
             targetW = (longSide * aspectRatio).toInt()
         }
 
         val finalW = if (targetW % 2 == 0) targetW else targetW - 1
         val finalH = if (targetH % 2 == 0) targetH else targetH - 1
-        return Pair(finalW, finalH)
+        return Pair(maxOf(finalW, 2), maxOf(finalH, 2))
     }
 
     private fun pauseRecording() {
