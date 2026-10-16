@@ -918,17 +918,20 @@ class ScreenRecordService : LifecycleService() {
     }
 
     private fun getTargetDimensions(resolutionSetting: String, screenWidth: Int, screenHeight: Int, orientationSetting: String): Pair<Int, Int> {
-        if (resolutionSetting == "Original") {
-            // Must be even
-            val w = if (screenWidth % 2 == 0) screenWidth else screenWidth - 1
-            val h = if (screenHeight % 2 == 0) screenHeight else screenHeight - 1
-            return Pair(maxOf(w, 2), maxOf(h, 2))
-        }
-
         val isLandscape = when (orientationSetting) {
             "Portrait" -> false
             "Landscape" -> true
-            else -> screenWidth > screenHeight
+            else -> (screenWidth > screenHeight) || 
+                    (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+        }
+
+        if (resolutionSetting == "Original") {
+            // Must be even and strictly adhere to active orientation
+            val rawW = if (isLandscape) maxOf(screenWidth, screenHeight) else minOf(screenWidth, screenHeight)
+            val rawH = if (isLandscape) minOf(screenWidth, screenHeight) else maxOf(screenWidth, screenHeight)
+            val w = if (rawW % 2 == 0) rawW else rawW - 1
+            val h = if (rawH % 2 == 0) rawH else rawH - 1
+            return Pair(maxOf(w, 2), maxOf(h, 2))
         }
         val longSide = when (resolutionSetting) {
             "4K" -> 3840
