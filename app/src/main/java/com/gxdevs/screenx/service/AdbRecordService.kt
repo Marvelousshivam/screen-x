@@ -10,6 +10,7 @@ import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
 import android.os.IBinder
+import android.os.StatFs
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -34,6 +35,7 @@ import java.util.Locale
 import com.gxdevs.screenx.R
 import com.gxdevs.screenx.utils.LocaleHelper
 import com.gxdevs.screenx.utils.DebugLogger
+import com.gxdevs.screenx.utils.VideoMerger
 
 /**
  * Foreground service that runs `screenrecord` via the ADB TCP connection.
@@ -269,6 +271,28 @@ class AdbRecordService : LifecycleService() {
                     return@launch
                 }
 
+                val adbAutoMerge = settingsManager.adbAutoMergeFlow.first()
+                val safeStorageStop = settingsManager.safeStorageStopFlow.first()
+                val safeStorageThresholdMb = settingsManager.safeStorageThresholdMbFlow.first()
+                val thresholdBytes = safeStorageThresholdMb * 1024L * 1024L
+
+                // Safe Storage Pre-check
+                if (safeStorageStop) {
+                    val availableBytes = getAvailableStorageBytes()
+                    if (availableBytes < thresholdBytes) {
+                        val availableMb = availableBytes / (1024 * 1024)
+                        DebugLogger.w(TAG, "Adb start aborted: free storage ($availableMb MB) below threshold ($safeStorageThresholdMb MB)")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                this@AdbRecordService,
+                                getString(R.string.toast_storage_critically_low_fmt, availableMb, safeStorageThresholdMb),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                        return@launch
+                    }
+                }
+
                 // Output directory: /sdcard/Movies/ScreenX
                 val dir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
@@ -280,14 +304,31 @@ class AdbRecordService : LifecycleService() {
                 var partIndex = 1
                 var consecutiveFailures = 0
 
-                val sessionStartTime = System.currentTimeMillis()
-                val maxSessionDurationMs = TIME_LIMIT_SECS * 1000L
+                DebugLogger.i(TAG, "Adb recording started: autoMerge=$adbAutoMerge, safeStorageStop=$safeStorageStop, thresholdMb=$safeStorageThresholdMb")
 
-                while (!userStopRequested && (System.currentTimeMillis() - sessionStartTime) < maxSessionDurationMs) {
-                    val remainingSecs = ((maxSessionDurationMs - (System.currentTimeMillis() - sessionStartTime)) / 1000L)
-                        .coerceAtLeast(10L).toInt()
-                    val partSuffix = if (partIndex == 1) "" else "_part$partIndex"
-                    val outFile = File(dir, "ADB_${dateStr}${partSuffix}.mp4")
+                while (!userStopRequested) {
+                    // Safe storage check before recording each segment
+                    if (safeStorageStop) {
+                        val availableBytes = getAvailableStorageBytes()
+                        if (availableBytes < thresholdBytes) {
+                            val availableMb = availableBytes / (1024 * 1024)
+                            DebugLogger.w(TAG, "Adb recording stopping: free storage ($availableMb MB) below safe threshold ($safeStorageThresholdMb MB)")
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    this@AdbRecordService,
+                                    getString(R.string.toast_storage_critically_low_fmt, availableMb, safeStorageThresholdMb),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            break
+                        }
+                    }
+
+                    val outFile = if (adbAutoMerge) {
+                        File(dir, "ADB_${dateStr}_part$partIndex.mp4")
+                    } else {
+                        File(dir, "ADB_${dateStr}.mp4")
+                    }
                     outputPath = outFile.absolutePath
 
                     // Calculate display metrics for --size before each part so rotation between segments is captured
@@ -332,7 +373,7 @@ class AdbRecordService : LifecycleService() {
                     val height = h and 1.inv()
                     val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
 
-                    val cmd = "screenrecord --time-limit $remainingSecs$sizeParam ${outFile.absolutePath}"
+                    val cmd = "screenrecord --time-limit $TIME_LIMIT_SECS$sizeParam ${outFile.absolutePath}"
                     Log.i(TAG, "Running: $cmd")
                     DebugLogger.i(TAG, "Adb Part $partIndex: metrics=${metrics.widthPixels}x${metrics.heightPixels}, rotation=$rotation, isLandscape=$isLandscape, chosen=${width}x${height}, cmd='$cmd'")
 
@@ -377,25 +418,78 @@ class AdbRecordService : LifecycleService() {
                         break
                     }
 
-                    // If screenrecord exited prematurely without user stop (e.g. app switch or surface transition),
-                    // allow the foreground window to settle before launching the next recording segment
-                    if (partDurationMs < 5000L) {
-                        kotlinx.coroutines.delay(400)
+                    // If continuous recording / auto-merge is disabled, stop after single 3-min part
+                    if (!adbAutoMerge) {
+                        break
+                    }
+
+                    // Only backoff slightly if screenrecord died abnormally fast (< 1000ms) to prevent busy loops
+                    if (partDurationMs < 1000L) {
+                        kotlinx.coroutines.delay(300)
                     }
                 }
 
-                // Scan all created files into MediaStore
+                // Process and save / auto-merge recorded files
                 if (savedFiles.isNotEmpty()) {
-                    val paths = savedFiles.map { it.absolutePath }.toTypedArray()
-                    val mimeTypes = Array(paths.size) { "video/mp4" }
-                    MediaScannerConnection.scanFile(
-                        this@AdbRecordService,
-                        paths,
-                        mimeTypes,
-                        null
-                    )
-                    showToast(getString(R.string.toast_recording_stopped))
-                    notifyRecordingSaved()
+                    if (savedFiles.size == 1) {
+                        val singleFile = savedFiles[0]
+                        val targetFile = File(dir, "ADB_${dateStr}.mp4")
+                        val finalFile = if (singleFile.absolutePath != targetFile.absolutePath) {
+                            if (singleFile.renameTo(targetFile)) targetFile else singleFile
+                        } else {
+                            singleFile
+                        }
+
+                        MediaScannerConnection.scanFile(
+                            this@AdbRecordService,
+                            arrayOf(finalFile.absolutePath),
+                            arrayOf("video/mp4"),
+                            null
+                        )
+                        showToast(getString(R.string.toast_recording_stopped))
+                        notifyRecordingSaved()
+                    } else {
+                        // Multiple segments recorded: losslessly merge into a single continuous video
+                        DebugLogger.i(TAG, "Auto-merging ${savedFiles.size} ADB recording segments...")
+                        withContext(Dispatchers.Main) {
+                            showToast(getString(R.string.toast_adb_merging))
+                        }
+
+                        val mergedFile = File(dir, "ADB_${dateStr}.mp4")
+                        val mergeSucceeded = VideoMerger.mergeSegments(savedFiles, mergedFile)
+
+                        if (mergeSucceeded && mergedFile.exists() && mergedFile.length() > 0) {
+                            DebugLogger.i(TAG, "ADB segments merged successfully: ${mergedFile.length()} bytes")
+                            savedFiles.forEach { part ->
+                                try { part.delete() } catch (_: Exception) {}
+                            }
+
+                            MediaScannerConnection.scanFile(
+                                this@AdbRecordService,
+                                arrayOf(mergedFile.absolutePath),
+                                arrayOf("video/mp4"),
+                                null
+                            )
+                            withContext(Dispatchers.Main) {
+                                showToast(getString(R.string.toast_adb_merged_success))
+                            }
+                            notifyRecordingSaved()
+                        } else {
+                            DebugLogger.w(TAG, "Auto-merge failed; preserving individual parts.")
+                            val paths = savedFiles.map { it.absolutePath }.toTypedArray()
+                            val mimeTypes = Array(paths.size) { "video/mp4" }
+                            MediaScannerConnection.scanFile(
+                                this@AdbRecordService,
+                                paths,
+                                mimeTypes,
+                                null
+                            )
+                            withContext(Dispatchers.Main) {
+                                showToast(getString(R.string.toast_adb_merge_fallback))
+                            }
+                            notifyRecordingSaved()
+                        }
+                    }
                 } else {
                     showToast(getString(R.string.toast_stealth_no_video))
                 }
@@ -426,6 +520,30 @@ class AdbRecordService : LifecycleService() {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun getAvailableStorageBytes(): Long {
+        var minFreeBytes = Long.MAX_VALUE
+        try {
+            val cacheStat = StatFs(cacheDir.absolutePath)
+            val cacheFree = cacheStat.availableBlocksLong * cacheStat.blockSizeLong
+            minFreeBytes = minOf(minFreeBytes, cacheFree)
+        } catch (_: Exception) {}
+
+        try {
+            val dataStat = StatFs(Environment.getDataDirectory().absolutePath)
+            val dataFree = dataStat.availableBlocksLong * dataStat.blockSizeLong
+            minFreeBytes = minOf(minFreeBytes, dataFree)
+        } catch (_: Exception) {}
+
+        try {
+            val extDir = getExternalFilesDir(null) ?: Environment.getExternalStorageDirectory()
+            val extStat = StatFs(extDir.absolutePath)
+            val extFree = extStat.availableBlocksLong * extStat.blockSizeLong
+            minFreeBytes = minOf(minFreeBytes, extFree)
+        } catch (_: Exception) {}
+
+        return if (minFreeBytes == Long.MAX_VALUE) Long.MAX_VALUE else minFreeBytes
+    }
 
     private fun finish(success: Boolean) {
         DebugLogger.i(TAG, "Adb finish() called: success=$success, userStopRequested=$userStopRequested")

@@ -155,6 +155,7 @@ fun SettingsScreen(
     val adbEnabled by settingsManager.adbEnabledFlow.collectAsState(initial = false)
     val adbCaptureMode by settingsManager.adbCaptureModeFlow.collectAsState(initial = "mediaprojection")
     val adbPaired by settingsManager.adbPairedFlow.collectAsState(initial = false)
+    val adbAutoMerge by settingsManager.adbAutoMergeFlow.collectAsState(initial = true)
     val swapHomeCards by settingsManager.swapHomeCardsFlow.collectAsState(initial = false)
 
     var isCheckingUpdate by remember { mutableStateOf(false) }
@@ -755,6 +756,15 @@ fun SettingsScreen(
                                 value = adbModeDisplay,
                                 position = StackPosition.Middle,
                                 onClick = { showAdbModeDialog = true }
+                            )
+
+                            OrionSettingsSwitchItem(
+                                icon = Lucide.Film,
+                                title = stringResource(R.string.setting_adb_auto_merge_title),
+                                subtitle = stringResource(R.string.setting_adb_auto_merge_sub),
+                                checked = adbAutoMerge,
+                                position = StackPosition.Middle,
+                                onCheckedChange = { coroutineScope.launch { settingsManager.setAdbAutoMerge(it) } }
                             )
 
                             OrionSettingsSwitchItem(

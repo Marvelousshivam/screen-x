@@ -449,4 +449,11 @@
     <string name="toast_exporting_logs">Формування діагностичного log.txt…</string>
     <string name="toast_logs_ready">Діагностичний лог готовий до відправки</string>
     <string name="toast_logs_failed">Не вдалося експортувати логи: %1$s</string>
+
+    <!-- ADB Continuous Recording & Auto-Merge -->
+    <string name="setting_adb_auto_merge_title">Автопродовження після 3 хв та об\'єднання</string>
+    <string name="setting_adb_auto_merge_sub">Оминає ліміт Android у 3 хвилини. Безшовно запускає наступний сегмент та об\'єднує всі частини в одне відео.</string>
+    <string name="toast_adb_merging">ScreenX об\'єднує записи в один файл...</string>
+    <string name="toast_adb_merged_success">Записи успішно об\'єднано та збережено</string>
+    <string name="toast_adb_merge_fallback">Помилка об\'єднання; окремі частини збережено</string>
 </resources>

@@ -449,4 +449,11 @@
     <string name="toast_exporting_logs">Generando log.txt de diagnóstico…</string>
     <string name="toast_logs_ready">Registro de diagnóstico listo para compartir</string>
     <string name="toast_logs_failed">Error al exportar registros: %1$s</string>
+
+    <!-- ADB Continuous Recording & Auto-Merge -->
+    <string name="setting_adb_auto_merge_title">Continuar tras 3 min y combinar</string>
+    <string name="setting_adb_auto_merge_sub">Supera el límite de 3 minutos de Android. Inicia el siguiente fragmento sin interrupción y combina las partes en un único video.</string>
+    <string name="toast_adb_merging">ScreenX está combinando las grabaciones en un solo archivo...</string>
+    <string name="toast_adb_merged_success">Grabaciones combinadas y guardadas correctamente</string>
+    <string name="toast_adb_merge_fallback">Error al combinar; se guardaron las partes individuales</string>
 </resources>

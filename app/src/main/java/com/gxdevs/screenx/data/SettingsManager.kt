@@ -40,6 +40,8 @@ class SettingsManager(private val context: Context) {
         val KEY_ADB_PAIRED       = booleanPreferencesKey("adb_paired")   // true once paired successfully
         val KEY_ADB_PRIVATE_KEY  = stringPreferencesKey("adb_private_key") // Base64 RSA private key
         val KEY_ADB_PUBLIC_KEY   = stringPreferencesKey("adb_public_key")  // Base64 RSA public key
+        // Auto-split and merge ADB recordings past 3-minute limit
+        val KEY_ADB_AUTO_MERGE   = booleanPreferencesKey("adb_auto_merge")
         // Stop recording when screen turns off
         val KEY_STOP_ON_SCREEN_OFF = booleanPreferencesKey("stop_on_screen_off")
         // Keep screen awake while recording/countdown
@@ -191,6 +193,10 @@ class SettingsManager(private val context: Context) {
         preferences[KEY_ADB_PUBLIC_KEY] ?: ""
     }
 
+    val adbAutoMergeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_AUTO_MERGE] ?: true
+    }
+
     suspend fun setFps(fps: Int) {
         context.dataStore.edit { preferences ->
             preferences[KEY_FPS] = fps
@@ -337,6 +343,12 @@ class SettingsManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[KEY_ADB_PRIVATE_KEY] = privateKeyB64
             preferences[KEY_ADB_PUBLIC_KEY]  = publicKeyB64
+        }
+    }
+
+    suspend fun setAdbAutoMerge(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_AUTO_MERGE] = enabled
         }
     }
 
