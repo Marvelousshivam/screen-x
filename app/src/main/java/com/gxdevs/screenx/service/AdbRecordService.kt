@@ -229,23 +229,6 @@ class AdbRecordService : LifecycleService() {
                 )
                 dir.mkdirs()
 
-                // Calculate display metrics for --size (exact working implementation from v1.4.2)
-                val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
-                val metrics = android.util.DisplayMetrics()
-                if (wm != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        val bounds = wm.currentWindowMetrics.bounds
-                        metrics.widthPixels = bounds.width()
-                        metrics.heightPixels = bounds.height()
-                    } else {
-                        @Suppress("DEPRECATION")
-                        wm.defaultDisplay.getRealMetrics(metrics)
-                    }
-                }
-                val width = metrics.widthPixels and 1.inv()
-                val height = metrics.heightPixels and 1.inv()
-                val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
-
                 val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
                 var partIndex = 1
                 var consecutiveFailures = 0
@@ -259,6 +242,23 @@ class AdbRecordService : LifecycleService() {
                     val partSuffix = if (partIndex == 1) "" else "_part$partIndex"
                     val outFile = File(dir, "ADB_${dateStr}${partSuffix}.mp4")
                     outputPath = outFile.absolutePath
+
+                    // Calculate display metrics for --size before each part so rotation between segments is captured
+                    val wm = getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager
+                    val metrics = android.util.DisplayMetrics()
+                    if (wm != null) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            val bounds = wm.currentWindowMetrics.bounds
+                            metrics.widthPixels = bounds.width()
+                            metrics.heightPixels = bounds.height()
+                        } else {
+                            @Suppress("DEPRECATION")
+                            wm.defaultDisplay.getRealMetrics(metrics)
+                        }
+                    }
+                    val width = metrics.widthPixels and 1.inv()
+                    val height = metrics.heightPixels and 1.inv()
+                    val sizeParam = if (width > 0 && height > 0) " --size ${width}x${height}" else ""
 
                     val cmd = "screenrecord --time-limit $remainingSecs$sizeParam ${outFile.absolutePath}"
                     Log.i(TAG, "Running: $cmd")
