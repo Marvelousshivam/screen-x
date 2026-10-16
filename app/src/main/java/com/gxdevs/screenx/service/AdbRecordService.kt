@@ -87,6 +87,9 @@ class AdbRecordService : LifecycleService() {
     var callerIsLandscape: Boolean = false
         private set
 
+    private var audioCaptureHelper: AudioCaptureHelper? = null
+    private var tempAudioFile: File? = null
+
     @Suppress("DEPRECATION")
     private fun acquireWakeLock() {
         if (wakeLock?.isHeld == true) return
@@ -304,7 +307,43 @@ class AdbRecordService : LifecycleService() {
                 var partIndex = 1
                 var consecutiveFailures = 0
 
-                DebugLogger.i(TAG, "Adb recording started: autoMerge=$adbAutoMerge, safeStorageStop=$safeStorageStop, thresholdMb=$safeStorageThresholdMb")
+                // Speaker audio capture in ADB mode (acoustic mic pickup with hardware DSP, zero MediaProjection prompt)
+                val recordAudio = settingsManager.adbRecordAudioFlow.first()
+                val hasMicPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                    this@AdbRecordService,
+                    android.Manifest.permission.RECORD_AUDIO
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                if (recordAudio && hasMicPermission) {
+                    val gainPercent = settingsManager.adbAudioGainPercentFlow.first()
+                    val clarity = settingsManager.adbAudioClarityFlow.first()
+                    val gainMultiplier = (gainPercent / 100f).coerceIn(1.0f, 6.0f)
+
+                    val audioOut = File(cacheDir, "temp_adb_audio_${System.currentTimeMillis()}.m4a")
+                    if (audioOut.exists()) audioOut.delete()
+                    tempAudioFile = audioOut
+
+                    try {
+                        val helper = AudioCaptureHelper(
+                            context = this@AdbRecordService,
+                            mediaProjection = null,
+                            audioSource = "Mic",
+                            outputFile = audioOut,
+                            voicePriorityEnabled = false,
+                            micGainMultiplier = gainMultiplier,
+                            vocalClarityEnabled = clarity
+                        )
+                        helper.start()
+                        audioCaptureHelper = helper
+                        DebugLogger.i(TAG, "Adb speaker audio capture started: gain=$gainMultiplier, clarity=$clarity, out=${audioOut.name}")
+                    } catch (e: Exception) {
+                        DebugLogger.e(TAG, "Failed to start Adb speaker audio capture", e)
+                        tempAudioFile = null
+                        audioCaptureHelper = null
+                    }
+                }
+
+                DebugLogger.i(TAG, "Adb recording started: autoMerge=$adbAutoMerge, recordAudio=$recordAudio, safeStorageStop=$safeStorageStop, thresholdMb=$safeStorageThresholdMb")
 
                 while (!userStopRequested) {
                     // Safe storage check before recording each segment
@@ -429,100 +468,192 @@ class AdbRecordService : LifecycleService() {
                     }
                 }
 
+                // Stop audio recording if active to flush AAC stream before merging
+                try {
+                    audioCaptureHelper?.stop()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error stopping audioCaptureHelper: ${e.message}")
+                }
+                audioCaptureHelper = null
+
+                val currentTempAudio = tempAudioFile
+                val hasValidAudio = currentTempAudio != null && currentTempAudio.exists() && currentTempAudio.length() > 512L
+
                 // Process and save / auto-merge recorded files
                 if (savedFiles.isNotEmpty()) {
                     if (savedFiles.size == 1) {
                         val singleFile = savedFiles[0]
                         val targetFile = File(dir, "ADB_${dateStr}.mp4")
 
-                        // Show saving notification
+                        // Show saving / merging notification
                         updateNotificationSafely(
                             buildSavingNotification(
                                 title = getString(R.string.finalizing_recording),
-                                content = getString(R.string.notif_saving_progress)
+                                content = if (hasValidAudio) getString(R.string.merging_audio_gallery) else getString(R.string.notif_saving_progress)
                             )
                         )
 
-                        val finalFile = if (singleFile.absolutePath != targetFile.absolutePath) {
-                            if (singleFile.renameTo(targetFile)) targetFile else singleFile
-                        } else {
-                            singleFile
-                        }
+                        val finalSuccess = if (hasValidAudio) {
+                            DebugLogger.i(TAG, "Muxing single ADB video with speaker audio...")
+                            VideoMerger.mergeVideoAndAudio(singleFile, currentTempAudio!!, targetFile)
+                        } else false
 
-                        MediaScannerConnection.scanFile(
-                            this@AdbRecordService,
-                            arrayOf(finalFile.absolutePath),
-                            arrayOf("video/mp4"),
-                            null
-                        )
-                        showToast(getString(R.string.toast_recording_stopped))
-                        notifyRecordingSaved()
-                    } else {
-                        // Multiple segments recorded: losslessly merge into a single continuous video
-                        DebugLogger.i(TAG, "Auto-merging ${savedFiles.size} ADB recording segments...")
-                        withContext(Dispatchers.Main) {
-                            showToast(getString(R.string.toast_adb_merging))
-                        }
-
-                        // Show merging notification with initial progress
-                        updateNotificationSafely(
-                            buildSavingNotification(
-                                title = getString(R.string.finalizing_recording),
-                                content = getString(R.string.notif_merging_progress_fmt, savedFiles.size),
-                                progress = 0
-                            )
-                        )
-
-                        val mergedFile = File(dir, "ADB_${dateStr}.mp4")
-                        val mergeSucceeded = VideoMerger.mergeSegments(savedFiles, mergedFile) { progress ->
-                            val percent = (progress * 100).toInt().coerceIn(0, 100)
-                            updateNotificationSafely(
-                                buildSavingNotification(
-                                    title = getString(R.string.finalizing_recording),
-                                    content = getString(R.string.notif_merging_progress_fmt, savedFiles.size) + " ($percent%)",
-                                    progress = percent
-                                )
-                            )
-                        }
-
-                        if (mergeSucceeded && mergedFile.exists() && mergedFile.length() > 0) {
-                            DebugLogger.i(TAG, "ADB segments merged successfully: ${mergedFile.length()} bytes")
-                            savedFiles.forEach { part ->
-                                try { part.delete() } catch (_: Exception) {}
-                            }
-
-                            // Show finalizing notification
-                            updateNotificationSafely(
-                                buildSavingNotification(
-                                    title = getString(R.string.finalizing_recording),
-                                    content = getString(R.string.notif_saving_progress)
-                                )
-                            )
-
+                        if (finalSuccess && targetFile.exists() && targetFile.length() > 0) {
+                            try { singleFile.delete() } catch (_: Exception) {}
+                            try { currentTempAudio?.delete() } catch (_: Exception) {}
                             MediaScannerConnection.scanFile(
                                 this@AdbRecordService,
-                                arrayOf(mergedFile.absolutePath),
+                                arrayOf(targetFile.absolutePath),
                                 arrayOf("video/mp4"),
                                 null
                             )
-                            withContext(Dispatchers.Main) {
-                                showToast(getString(R.string.toast_adb_merged_success))
-                            }
+                            showToast(getString(R.string.toast_recording_stopped))
                             notifyRecordingSaved()
                         } else {
-                            DebugLogger.w(TAG, "Auto-merge failed; preserving individual parts.")
-                            val paths = savedFiles.map { it.absolutePath }.toTypedArray()
-                            val mimeTypes = Array(paths.size) { "video/mp4" }
+                            val finalFile = if (singleFile.absolutePath != targetFile.absolutePath) {
+                                if (singleFile.renameTo(targetFile)) targetFile else singleFile
+                            } else {
+                                singleFile
+                            }
+                            try { currentTempAudio?.delete() } catch (_: Exception) {}
+
                             MediaScannerConnection.scanFile(
                                 this@AdbRecordService,
-                                paths,
-                                mimeTypes,
+                                arrayOf(finalFile.absolutePath),
+                                arrayOf("video/mp4"),
                                 null
                             )
-                            withContext(Dispatchers.Main) {
-                                showToast(getString(R.string.toast_adb_merge_fallback))
-                            }
+                            showToast(getString(R.string.toast_recording_stopped))
                             notifyRecordingSaved()
+                        }
+                    } else {
+                        // Multiple segments recorded: losslessly merge into a single continuous video
+                        val targetFile = File(dir, "ADB_${dateStr}.mp4")
+
+                        if (hasValidAudio) {
+                            DebugLogger.i(TAG, "Auto-merging ${savedFiles.size} ADB video segments + speaker audio...")
+                            updateNotificationSafely(
+                                buildSavingNotification(
+                                    title = getString(R.string.finalizing_recording),
+                                    content = getString(R.string.merging_audio_gallery)
+                                )
+                            )
+
+                            val tempVideoConcat = File(cacheDir, "temp_concat_${System.currentTimeMillis()}.mp4")
+                            val videoConcatSuccess = VideoMerger.mergeSegments(savedFiles, tempVideoConcat)
+
+                            val finalSuccess = if (videoConcatSuccess && tempVideoConcat.exists() && tempVideoConcat.length() > 0) {
+                                VideoMerger.mergeVideoAndAudio(tempVideoConcat, currentTempAudio!!, targetFile)
+                            } else false
+
+                            if (finalSuccess && targetFile.exists() && targetFile.length() > 0) {
+                                DebugLogger.i(TAG, "ADB video + speaker audio merged successfully: ${targetFile.length()} bytes")
+                                savedFiles.forEach { part -> try { part.delete() } catch (_: Exception) {} }
+                                try { tempVideoConcat.delete() } catch (_: Exception) {}
+                                try { currentTempAudio.delete() } catch (_: Exception) {}
+
+                                MediaScannerConnection.scanFile(
+                                    this@AdbRecordService,
+                                    arrayOf(targetFile.absolutePath),
+                                    arrayOf("video/mp4"),
+                                    null
+                                )
+                                withContext(Dispatchers.Main) {
+                                    showToast(getString(R.string.toast_adb_merged_success))
+                                }
+                                notifyRecordingSaved()
+                            } else {
+                                DebugLogger.w(TAG, "Audio muxing failed; falling back to video-only merge.")
+                                try { tempVideoConcat.delete() } catch (_: Exception) {}
+                                try { currentTempAudio.delete() } catch (_: Exception) {}
+
+                                val videoOnlySuccess = VideoMerger.mergeSegments(savedFiles, targetFile)
+                                if (videoOnlySuccess && targetFile.exists() && targetFile.length() > 0) {
+                                    savedFiles.forEach { part -> try { part.delete() } catch (_: Exception) {} }
+                                    MediaScannerConnection.scanFile(
+                                        this@AdbRecordService,
+                                        arrayOf(targetFile.absolutePath),
+                                        arrayOf("video/mp4"),
+                                        null
+                                    )
+                                    withContext(Dispatchers.Main) {
+                                        showToast(getString(R.string.toast_adb_merged_success))
+                                    }
+                                    notifyRecordingSaved()
+                                } else {
+                                    val paths = savedFiles.map { it.absolutePath }.toTypedArray()
+                                    val mimeTypes = Array(paths.size) { "video/mp4" }
+                                    MediaScannerConnection.scanFile(this@AdbRecordService, paths, mimeTypes, null)
+                                    withContext(Dispatchers.Main) {
+                                        showToast(getString(R.string.toast_adb_merge_fallback))
+                                    }
+                                    notifyRecordingSaved()
+                                }
+                            }
+                        } else {
+                            DebugLogger.i(TAG, "Auto-merging ${savedFiles.size} ADB recording segments (video only)...")
+                            withContext(Dispatchers.Main) {
+                                showToast(getString(R.string.toast_adb_merging))
+                            }
+
+                            // Show merging notification with initial progress
+                            updateNotificationSafely(
+                                buildSavingNotification(
+                                    title = getString(R.string.finalizing_recording),
+                                    content = getString(R.string.notif_merging_progress_fmt, savedFiles.size),
+                                    progress = 0
+                                )
+                            )
+
+                            val mergeSucceeded = VideoMerger.mergeSegments(savedFiles, targetFile) { progress ->
+                                val percent = (progress * 100).toInt().coerceIn(0, 100)
+                                updateNotificationSafely(
+                                    buildSavingNotification(
+                                        title = getString(R.string.finalizing_recording),
+                                        content = getString(R.string.notif_merging_progress_fmt, savedFiles.size) + " ($percent%)",
+                                        progress = percent
+                                    )
+                                )
+                            }
+
+                            if (mergeSucceeded && targetFile.exists() && targetFile.length() > 0) {
+                                DebugLogger.i(TAG, "ADB segments merged successfully: ${targetFile.length()} bytes")
+                                savedFiles.forEach { part ->
+                                    try { part.delete() } catch (_: Exception) {}
+                                }
+
+                                updateNotificationSafely(
+                                    buildSavingNotification(
+                                        title = getString(R.string.finalizing_recording),
+                                        content = getString(R.string.notif_saving_progress)
+                                    )
+                                )
+
+                                MediaScannerConnection.scanFile(
+                                    this@AdbRecordService,
+                                    arrayOf(targetFile.absolutePath),
+                                    arrayOf("video/mp4"),
+                                    null
+                                )
+                                withContext(Dispatchers.Main) {
+                                    showToast(getString(R.string.toast_adb_merged_success))
+                                }
+                                notifyRecordingSaved()
+                            } else {
+                                DebugLogger.w(TAG, "Auto-merge failed; preserving individual parts.")
+                                val paths = savedFiles.map { it.absolutePath }.toTypedArray()
+                                val mimeTypes = Array(paths.size) { "video/mp4" }
+                                MediaScannerConnection.scanFile(
+                                    this@AdbRecordService,
+                                    paths,
+                                    mimeTypes,
+                                    null
+                                )
+                                withContext(Dispatchers.Main) {
+                                    showToast(getString(R.string.toast_adb_merge_fallback))
+                                }
+                                notifyRecordingSaved()
+                            }
                         }
                     }
                 } else {
@@ -543,6 +674,11 @@ class AdbRecordService : LifecycleService() {
     private fun stopAdbRecording() {
         if (!isRecording) return
         userStopRequested = true
+        try {
+            audioCaptureHelper?.stop()
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not stop audioCaptureHelper: ${e.message}")
+        }
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // Send SIGINT so screenrecord finalises the MP4 properly

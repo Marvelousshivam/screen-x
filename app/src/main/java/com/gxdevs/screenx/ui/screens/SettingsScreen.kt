@@ -156,6 +156,7 @@ fun SettingsScreen(
     val adbCaptureMode by settingsManager.adbCaptureModeFlow.collectAsState(initial = "mediaprojection")
     val adbPaired by settingsManager.adbPairedFlow.collectAsState(initial = false)
     val adbAutoMerge by settingsManager.adbAutoMergeFlow.collectAsState(initial = true)
+    val adbRecordAudio by settingsManager.adbRecordAudioFlow.collectAsState(initial = false)
     val swapHomeCards by settingsManager.swapHomeCardsFlow.collectAsState(initial = false)
 
     var isCheckingUpdate by remember { mutableStateOf(false) }
@@ -251,6 +252,17 @@ fun SettingsScreen(
                 }
                 context.startActivity(intent)
             } catch (_: Exception) {}
+        }
+    }
+
+    val adbMicPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            coroutineScope.launch { settingsManager.setAdbRecordAudio(true) }
+        } else {
+            Toast.makeText(context, context.getString(R.string.toast_mic_init_failed), Toast.LENGTH_SHORT).show()
+            coroutineScope.launch { settingsManager.setAdbRecordAudio(false) }
         }
     }
 
@@ -765,6 +777,29 @@ fun SettingsScreen(
                                 checked = adbAutoMerge,
                                 position = StackPosition.Middle,
                                 onCheckedChange = { coroutineScope.launch { settingsManager.setAdbAutoMerge(it) } }
+                            )
+
+                            OrionSettingsSwitchItem(
+                                icon = Lucide.Volume2,
+                                title = stringResource(R.string.setting_adb_record_speaker_title),
+                                subtitle = stringResource(R.string.setting_adb_record_speaker_sub),
+                                checked = adbRecordAudio,
+                                position = StackPosition.Middle,
+                                onCheckedChange = { willEnable ->
+                                    if (willEnable) {
+                                        val hasPerm = ContextCompat.checkSelfPermission(
+                                            context,
+                                            android.Manifest.permission.RECORD_AUDIO
+                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                        if (hasPerm) {
+                                            coroutineScope.launch { settingsManager.setAdbRecordAudio(true) }
+                                        } else {
+                                            adbMicPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                        }
+                                    } else {
+                                        coroutineScope.launch { settingsManager.setAdbRecordAudio(false) }
+                                    }
+                                }
                             )
 
                             OrionSettingsSwitchItem(

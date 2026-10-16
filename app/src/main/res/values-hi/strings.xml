@@ -453,6 +453,8 @@
     <!-- ADB Continuous Recording & Auto-Merge -->
     <string name="setting_adb_auto_merge_title">3 मिनट के बाद ऑटो-जारी रखें और मर्ज करें</string>
     <string name="setting_adb_auto_merge_sub">Android की 3 मिनट की सीमा को बायपास करता है। अगला भाग बिना रुके तुरंत शुरू होता है और सभी भाग अपने आप एक अंतिम वीडियो में मर्ज हो जाते हैं।</string>
+    <string name="setting_adb_record_speaker_title">स्पीकर से ऑडियो रिकॉर्ड करें</string>
+    <string name="setting_adb_record_speaker_sub">शोर सफाई और वॉल्यूम बूस्ट के साथ स्पीकर से निकलने वाले गेम व ऐप ऑडियो को रिकॉर्ड करता है। किसी अनुमति डायलॉग की आवश्यकता नहीं।</string>
     <string name="toast_adb_merging">ScreenX रिकॉर्डिंग को एक फ़ाइल में मर्ज कर रहा है...</string>
     <string name="toast_adb_merged_success">रिकॉर्डिंग सफलतापूर्वक मर्ज और सहेज ली गई</string>
     <string name="toast_adb_merge_fallback">ऑटो-मर्ज विफल रहा; अलग-अलग रिकॉर्डिंग भाग सहेजे गए</string>

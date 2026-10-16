@@ -144,6 +144,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val adbMicPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        startAdbRecordService()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -605,22 +611,30 @@ class MainActivity : ComponentActivity() {
                     ).show()
                     return@launch
                 }
-                // Launch the ADB recording service
-                try {
-                    val startIntent = Intent(this@MainActivity, AdbRecordService::class.java).apply {
-                        action = AdbRecordService.ACTION_START_ADB
-                        putExtra(AdbRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(startIntent)
-                    } else {
-                        startService(startIntent)
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("MainActivity", "Failed to start Stealth recording service", e)
-                    Toast.makeText(this@MainActivity, getString(R.string.home_toast_stealth_error_fmt, e.message ?: ""), Toast.LENGTH_SHORT).show()
+                val isRecordAudio = settingsManager.adbRecordAudioFlow.first()
+                if (isRecordAudio && ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    adbMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    return@launch
                 }
+                startAdbRecordService()
             }
+        }
+    }
+
+    private fun startAdbRecordService() {
+        try {
+            val startIntent = Intent(this@MainActivity, AdbRecordService::class.java).apply {
+                action = AdbRecordService.ACTION_START_ADB
+                putExtra(AdbRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(startIntent)
+            } else {
+                startService(startIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to start Stealth recording service", e)
+            Toast.makeText(this@MainActivity, getString(R.string.home_toast_stealth_error_fmt, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
     }
 

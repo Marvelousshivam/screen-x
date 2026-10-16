@@ -42,6 +42,10 @@ class SettingsManager(private val context: Context) {
         val KEY_ADB_PUBLIC_KEY   = stringPreferencesKey("adb_public_key")  // Base64 RSA public key
         // Auto-split and merge ADB recordings past 3-minute limit
         val KEY_ADB_AUTO_MERGE   = booleanPreferencesKey("adb_auto_merge")
+        // Speaker audio capture in ADB mode (via acoustic mic DSP, 0 MediaProjection dialog)
+        val KEY_ADB_RECORD_AUDIO = booleanPreferencesKey("adb_record_audio")
+        val KEY_ADB_AUDIO_GAIN   = intPreferencesKey("adb_audio_gain_percent")
+        val KEY_ADB_AUDIO_CLARITY = booleanPreferencesKey("adb_audio_clarity")
         // Stop recording when screen turns off
         val KEY_STOP_ON_SCREEN_OFF = booleanPreferencesKey("stop_on_screen_off")
         // Keep screen awake while recording/countdown
@@ -197,6 +201,18 @@ class SettingsManager(private val context: Context) {
         preferences[KEY_ADB_AUTO_MERGE] ?: true
     }
 
+    val adbRecordAudioFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_RECORD_AUDIO] ?: false
+    }
+
+    val adbAudioGainPercentFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_AUDIO_GAIN] ?: 250
+    }
+
+    val adbAudioClarityFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_AUDIO_CLARITY] ?: true
+    }
+
     suspend fun setFps(fps: Int) {
         context.dataStore.edit { preferences ->
             preferences[KEY_FPS] = fps
@@ -349,6 +365,24 @@ class SettingsManager(private val context: Context) {
     suspend fun setAdbAutoMerge(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_ADB_AUTO_MERGE] = enabled
+        }
+    }
+
+    suspend fun setAdbRecordAudio(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_RECORD_AUDIO] = enabled
+        }
+    }
+
+    suspend fun setAdbAudioGainPercent(gainPercent: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_AUDIO_GAIN] = gainPercent
+        }
+    }
+
+    suspend fun setAdbAudioClarity(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_AUDIO_CLARITY] = enabled
         }
     }
 

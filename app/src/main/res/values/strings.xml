@@ -453,6 +453,8 @@
     <!-- ADB Continuous Recording & Auto-Merge -->
     <string name="setting_adb_auto_merge_title">Auto-Continue Past 3 Min &amp; Merge</string>
     <string name="setting_adb_auto_merge_sub">Bypasses Android\'s 3-minute limit. Seamlessly auto-starts the next segment and merges all parts into a single video.</string>
+    <string name="setting_adb_record_speaker_title">Record Audio from Speaker</string>
+    <string name="setting_adb_record_speaker_sub">Captures game &amp; app audio coming from device speakers with noise clearing and volume boost. No permission dialog required.</string>
     <string name="toast_adb_merging">ScreenX is merging recordings into a single file...</string>
     <string name="toast_adb_merged_success">Recordings merged successfully and saved</string>
     <string name="toast_adb_merge_fallback">Auto-merge failed; individual recording parts were saved</string>

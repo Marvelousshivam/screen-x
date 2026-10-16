@@ -453,6 +453,8 @@
     <!-- ADB Continuous Recording & Auto-Merge -->
     <string name="setting_adb_auto_merge_title">Автопродовження після 3 хв та об\'єднання</string>
     <string name="setting_adb_auto_merge_sub">Оминає ліміт Android у 3 хвилини. Безшовно запускає наступний сегмент та об\'єднує всі частини в одне відео.</string>
+    <string name="setting_adb_record_speaker_title">Запис звуку з динаміків</string>
+    <string name="setting_adb_record_speaker_sub">Записує звук ігор та додатків із динаміків пристрою з шумозаглушенням і підсиленням гучності. Без жодних діалогових вікон.</string>
     <string name="toast_adb_merging">ScreenX об\'єднує записи в один файл...</string>
     <string name="toast_adb_merged_success">Записи успішно об\'єднано та збережено</string>
     <string name="toast_adb_merge_fallback">Помилка об\'єднання; окремі частини збережено</string>

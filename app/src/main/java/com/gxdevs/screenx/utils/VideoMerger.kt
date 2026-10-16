@@ -221,4 +221,167 @@ object VideoMerger {
             }
         }
     }
+
+    /**
+     * Losslessly muxes an existing MP4 [videoFile] and AAC [audioFile] into [outputFile].
+     * Synchronizes and normalizes presentation timestamps chronologically.
+     */
+    fun mergeVideoAndAudio(
+        videoFile: File,
+        audioFile: File,
+        outputFile: File,
+        progressCallback: (Float) -> Unit = {}
+    ): Boolean {
+        if (!videoFile.exists() || videoFile.length() <= 1024L) return false
+        if (!audioFile.exists() || audioFile.length() <= 512L) {
+            // No valid audio; copy video directly
+            return try {
+                if (outputFile.exists()) outputFile.delete()
+                videoFile.copyTo(outputFile, overwrite = true).exists()
+            } catch (e: Exception) {
+                Log.e(TAG, "Audio fallback copy failed", e)
+                false
+            }
+        }
+
+        val extractorVideo = MediaExtractor()
+        val extractorAudio = MediaExtractor()
+        var muxer: MediaMuxer? = null
+        var muxerStarted = false
+
+        try {
+            extractorVideo.setDataSource(videoFile.absolutePath)
+            extractorAudio.setDataSource(audioFile.absolutePath)
+
+            if (outputFile.exists()) outputFile.delete()
+            val m = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+            muxer = m
+
+            // Orientation hint preservation
+            try {
+                val retriever = android.media.MediaMetadataRetriever()
+                retriever.setDataSource(videoFile.absolutePath)
+                val rotationStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                val rotationDegrees = rotationStr?.toIntOrNull() ?: 0
+                if (rotationDegrees > 0) {
+                    m.setOrientationHint(rotationDegrees)
+                }
+                retriever.release()
+            } catch (_: Exception) {}
+
+            var videoTrackIndex = -1
+            for (i in 0 until extractorVideo.trackCount) {
+                val format = extractorVideo.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+                if (mime.startsWith("video/")) {
+                    extractorVideo.selectTrack(i)
+                    videoTrackIndex = m.addTrack(format)
+                    break
+                }
+            }
+
+            var audioTrackIndex = -1
+            for (i in 0 until extractorAudio.trackCount) {
+                val format = extractorAudio.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+                if (mime.startsWith("audio/")) {
+                    extractorAudio.selectTrack(i)
+                    audioTrackIndex = m.addTrack(format)
+                    break
+                }
+            }
+
+            if (videoTrackIndex == -1) {
+                Log.e(TAG, "mergeVideoAndAudio: No video track found.")
+                return false
+            }
+            if (audioTrackIndex == -1) {
+                Log.e(TAG, "mergeVideoAndAudio: No audio track found.")
+                return false
+            }
+
+            m.start()
+            muxerStarted = true
+
+            val buffer = ByteBuffer.allocate(BUFFER_SIZE)
+            val bufferInfo = MediaCodec.BufferInfo()
+
+            var videoDone = false
+            var audioDone = false
+            var lastVideoPts = -1L
+            var lastAudioPts = -1L
+
+            val firstVideoTime = if (extractorVideo.sampleTime >= 0) extractorVideo.sampleTime else 0L
+            val firstAudioTime = if (extractorAudio.sampleTime >= 0) extractorAudio.sampleTime else 0L
+            val basePtsOffset = minOf(firstVideoTime, firstAudioTime)
+
+            var writtenSamples = 0
+            while (!videoDone || !audioDone) {
+                val videoTime = if (!videoDone) extractorVideo.sampleTime else Long.MAX_VALUE
+                val audioTime = if (!audioDone) extractorAudio.sampleTime else Long.MAX_VALUE
+
+                if (!videoDone && (audioDone || videoTime <= audioTime)) {
+                    buffer.clear()
+                    bufferInfo.offset = 0
+                    bufferInfo.size = extractorVideo.readSampleData(buffer, 0)
+                    if (bufferInfo.size < 0) {
+                        videoDone = true
+                    } else {
+                        var pts = maxOf(0L, videoTime - basePtsOffset)
+                        if (pts <= lastVideoPts) {
+                            pts = lastVideoPts + 1000L
+                        }
+                        lastVideoPts = pts
+                        bufferInfo.presentationTimeUs = pts
+                        bufferInfo.flags = extractorVideo.sampleFlags
+                        if (bufferInfo.size > 0) {
+                            buffer.position(0)
+                            buffer.limit(bufferInfo.size)
+                            m.writeSampleData(videoTrackIndex, buffer, bufferInfo)
+                        }
+                        extractorVideo.advance()
+                    }
+                } else if (!audioDone) {
+                    buffer.clear()
+                    bufferInfo.offset = 0
+                    bufferInfo.size = extractorAudio.readSampleData(buffer, 0)
+                    if (bufferInfo.size < 0) {
+                        audioDone = true
+                    } else {
+                        var pts = maxOf(0L, audioTime - basePtsOffset)
+                        if (pts <= lastAudioPts) {
+                            pts = lastAudioPts + 1000L
+                        }
+                        lastAudioPts = pts
+                        bufferInfo.presentationTimeUs = pts
+                        bufferInfo.flags = extractorAudio.sampleFlags
+                        if (bufferInfo.size > 0) {
+                            buffer.position(0)
+                            buffer.limit(bufferInfo.size)
+                            m.writeSampleData(audioTrackIndex, buffer, bufferInfo)
+                        }
+                        extractorAudio.advance()
+                    }
+                }
+                writtenSamples++
+                if (writtenSamples % 200 == 0) {
+                    progressCallback(0.5f)
+                }
+            }
+
+            progressCallback(1.0f)
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "mergeVideoAndAudio failed: ${e.message}", e)
+            if (outputFile.exists()) outputFile.delete()
+            return false
+        } finally {
+            try { extractorVideo.release() } catch (_: Exception) {}
+            try { extractorAudio.release() } catch (_: Exception) {}
+            if (muxer != null && muxerStarted) {
+                try { muxer.stop() } catch (e: Exception) { Log.w(TAG, "Muxer stop failed: ${e.message}") }
+                try { muxer.release() } catch (_: Exception) {}
+            }
+        }
+    }
 }

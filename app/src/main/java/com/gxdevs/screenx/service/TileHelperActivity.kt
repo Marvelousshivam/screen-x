@@ -86,6 +86,13 @@ class TileHelperActivity : ComponentActivity() {
         finish()
     }
 
+    private val adbMicPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        startAdbServiceFromTile()
+        finish()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -127,19 +134,12 @@ class TileHelperActivity : ComponentActivity() {
                     finish()
                     return@launch
                 }
-                val startIntent = Intent(this@TileHelperActivity, AdbRecordService::class.java).apply {
-                    action = AdbRecordService.ACTION_START_ADB
-                    putExtra(AdbRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
+                val isRecordAudio = settingsManager.adbRecordAudioFlow.first()
+                if (isRecordAudio && ContextCompat.checkSelfPermission(this@TileHelperActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    adbMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    return@launch
                 }
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(startIntent)
-                    } else {
-                        startService(startIntent)
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("TileHelperActivity", "Failed to start AdbRecordService", e)
-                }
+                startAdbServiceFromTile()
                 finish()
                 return@launch
             }
@@ -229,5 +229,21 @@ class TileHelperActivity : ComponentActivity() {
             putExtra(ScreenRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
         }
         androidx.core.content.ContextCompat.startForegroundService(this, serviceIntent)
+    }
+
+    private fun startAdbServiceFromTile() {
+        val startIntent = Intent(this@TileHelperActivity, AdbRecordService::class.java).apply {
+            action = AdbRecordService.ACTION_START_ADB
+            putExtra(AdbRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(startIntent)
+            } else {
+                startService(startIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TileHelperActivity", "Failed to start AdbRecordService", e)
+        }
     }
 }
