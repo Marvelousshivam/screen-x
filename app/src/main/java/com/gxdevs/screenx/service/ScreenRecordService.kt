@@ -578,20 +578,54 @@ class ScreenRecordService : LifecycleService() {
         isForeground = true
     }
 
+    private fun canPostNotifications(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+        }
+    }
+
+    private fun buildSavingNotification(title: String, content: String): Notification {
+        val pendingMainIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(pendingMainIntent)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setProgress(0, 0, true)
+            .build()
+    }
+
+    private fun updateNotificationSafely(notification: Notification) {
+        try {
+            if (canPostNotifications()) {
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                notificationManager?.notify(NOTIFICATION_ID, notification)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update notification: ${e.message}")
+        }
+    }
+
     private fun updateNotification(status: String) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         lifecycleScope.launch {
             val showPill = settingsManager.showStatusBarPillFlow.first()
-            notificationManager.notify(NOTIFICATION_ID, createNotification(status, showPill))
+            updateNotificationSafely(createNotification(status, showPill))
         }
     }
 
     private fun updateNotificationCountdown(remainingSeconds: Int, totalSeconds: Int, showPill: Boolean) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(
-            NOTIFICATION_ID,
-            createCountdownNotification(remainingSeconds, totalSeconds, showPill)
-        )
+        updateNotificationSafely(createCountdownNotification(remainingSeconds, totalSeconds, showPill))
     }
 
     private fun cancelCountdown() {
@@ -1109,7 +1143,6 @@ class ScreenRecordService : LifecycleService() {
             val showFloating = settingsManager.showFloatingFlow.first()
             val mode = settingsManager.floatingShowModeFlow.first()
             if (showFloating && mode.startsWith("All the time")) {
-                updateNotification("Floating controls active")
                 floatingControlOverlay?.updateState()
             } else {
                 dismissFloatingControls()
@@ -1176,6 +1209,14 @@ class ScreenRecordService : LifecycleService() {
                     Log.e(TAG, "Error stopping media projection", e)
                 }
 
+                // Show merging / finalizing notification while processing files
+                updateNotificationSafely(
+                    buildSavingNotification(
+                        title = getString(R.string.finalizing_recording),
+                        content = getString(R.string.merging_audio_gallery)
+                    )
+                )
+
                 // STEP 6: Remux video and audio files if both temp video and audio exist
                 val fileToSave = if (currentTempAudio != null && currentTempAudio.exists() && currentTempAudio.length() > 0 &&
                     currentTempVideo != null && currentTempVideo.exists() && currentTempVideo.length() > 0) {
@@ -1201,6 +1242,12 @@ class ScreenRecordService : LifecycleService() {
                 // Save recorded file to MediaStore
                 fileToSave?.let { tempFile ->
                     if (tempFile.exists() && tempFile.length() > 0) {
+                        updateNotificationSafely(
+                            buildSavingNotification(
+                                title = getString(R.string.finalizing_recording),
+                                content = getString(R.string.notif_saving_progress)
+                            )
+                        )
                         saveVideoToMediaStore(tempFile, targetRes, recDuration)
                         withContext(Dispatchers.Main) {
                             if (reason != null) {

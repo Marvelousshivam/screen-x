@@ -434,6 +434,15 @@ class AdbRecordService : LifecycleService() {
                     if (savedFiles.size == 1) {
                         val singleFile = savedFiles[0]
                         val targetFile = File(dir, "ADB_${dateStr}.mp4")
+
+                        // Show saving notification
+                        updateNotificationSafely(
+                            buildSavingNotification(
+                                title = getString(R.string.finalizing_recording),
+                                content = getString(R.string.notif_saving_progress)
+                            )
+                        )
+
                         val finalFile = if (singleFile.absolutePath != targetFile.absolutePath) {
                             if (singleFile.renameTo(targetFile)) targetFile else singleFile
                         } else {
@@ -455,14 +464,40 @@ class AdbRecordService : LifecycleService() {
                             showToast(getString(R.string.toast_adb_merging))
                         }
 
+                        // Show merging notification with initial progress
+                        updateNotificationSafely(
+                            buildSavingNotification(
+                                title = getString(R.string.finalizing_recording),
+                                content = getString(R.string.notif_merging_progress_fmt, savedFiles.size),
+                                progress = 0
+                            )
+                        )
+
                         val mergedFile = File(dir, "ADB_${dateStr}.mp4")
-                        val mergeSucceeded = VideoMerger.mergeSegments(savedFiles, mergedFile)
+                        val mergeSucceeded = VideoMerger.mergeSegments(savedFiles, mergedFile) { progress ->
+                            val percent = (progress * 100).toInt().coerceIn(0, 100)
+                            updateNotificationSafely(
+                                buildSavingNotification(
+                                    title = getString(R.string.finalizing_recording),
+                                    content = getString(R.string.notif_merging_progress_fmt, savedFiles.size) + " ($percent%)",
+                                    progress = percent
+                                )
+                            )
+                        }
 
                         if (mergeSucceeded && mergedFile.exists() && mergedFile.length() > 0) {
                             DebugLogger.i(TAG, "ADB segments merged successfully: ${mergedFile.length()} bytes")
                             savedFiles.forEach { part ->
                                 try { part.delete() } catch (_: Exception) {}
                             }
+
+                            // Show finalizing notification
+                            updateNotificationSafely(
+                                buildSavingNotification(
+                                    title = getString(R.string.finalizing_recording),
+                                    content = getString(R.string.notif_saving_progress)
+                                )
+                            )
 
                             MediaScannerConnection.scanFile(
                                 this@AdbRecordService,
@@ -642,6 +677,56 @@ class AdbRecordService : LifecycleService() {
         }
 
         return builder.build()
+    }
+
+    private fun canPostNotifications(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+        }
+    }
+
+    private fun buildSavingNotification(
+        title: String,
+        content: String,
+        progress: Int = -1,
+        maxProgress: Int = 100
+    ): Notification {
+        val mainIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(mainIntent)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        if (progress in 0..maxProgress) {
+            builder.setProgress(maxProgress, progress, false)
+        } else {
+            builder.setProgress(0, 0, true)
+        }
+
+        return builder.build()
+    }
+
+    private fun updateNotificationSafely(notification: Notification) {
+        try {
+            if (canPostNotifications()) {
+                val notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                notifManager?.notify(NOTIFICATION_ID, notification)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update notification: ${e.message}")
+        }
     }
 
     override fun onDestroy() {

@@ -456,4 +456,6 @@
     <string name="toast_adb_merging">ScreenX is merging recordings into a single file...</string>
     <string name="toast_adb_merged_success">Recordings merged successfully and saved</string>
     <string name="toast_adb_merge_fallback">Auto-merge failed; individual recording parts were saved</string>
+    <string name="notif_saving_progress">Finalizing and saving video to gallery…</string>
+    <string name="notif_merging_progress_fmt">Merging %1$d recording parts into a single video…</string>
 </resources>

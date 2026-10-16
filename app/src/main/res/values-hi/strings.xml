@@ -456,4 +456,6 @@
     <string name="toast_adb_merging">ScreenX रिकॉर्डिंग को एक फ़ाइल में मर्ज कर रहा है...</string>
     <string name="toast_adb_merged_success">रिकॉर्डिंग सफलतापूर्वक मर्ज और सहेज ली गई</string>
     <string name="toast_adb_merge_fallback">ऑटो-मर्ज विफल रहा; अलग-अलग रिकॉर्डिंग भाग सहेजे गए</string>
+    <string name="notif_saving_progress">वीडियो को अंतिम रूप देकर गैलरी में सहेजा जा रहा है…</string>
+    <string name="notif_merging_progress_fmt">%1$d रिकॉर्डिंग भागों को एक वीडियो में मर्ज किया जा रहा है…</string>
 </resources>
