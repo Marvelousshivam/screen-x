@@ -2,33 +2,23 @@
 
   <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" alt="ScreenX Logo" width="128" height="128" />
 
+<div align="center">
+
 # ScreenX
 
-**Pure, powerful screen recording for Android. Zero limits, zero nonsense.**
+<p><strong>Pure, powerful screen recording for Android. Zero limits, zero nonsense.</strong></p>
 
-<p align="left">
-  <a href="https://github.com/gtxprime/screen-x/releases/latest">
-    <img src="https://img.shields.io/github/v/release/gtxprime/screen-x?style=for-the-badge&color=10b981&labelColor=18181b&logo=android&logoColor=white" alt="Latest Version" />
-  </a>
-  <a href="https://github.com/gtxprime/screen-x/stargazers">
-    <img src="https://img.shields.io/github/stars/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Stars" />
-  </a>
-  <a href="https://github.com/gtxprime/screen-x/network/members">
-    <img src="https://img.shields.io/github/forks/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Forks" />
-  </a>
-  <a href="https://github.com/gtxprime/screen-x/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-21262d?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License: MIT" />
-  </a>
-  <a href="https://developer.android.com/about/versions">
-    <img src="https://img.shields.io/badge/Android_API-26--37-21262d?style=for-the-badge&logo=android&logoColor=white" alt="Android API 26–37" />
-  </a>
-  <a href="https://github.com/gtxprime/screen-x/releases/latest">
-    <img src="https://img.shields.io/github/downloads/gtxprime/screen-x/total?label=Downloads&logo=github&style=for-the-badge&color=21262d&logoColor=white" alt="GitHub Downloads" />
-  </a>
-  <a href="https://hub.xerj.org/contributors/gtxPrime">
-    <img src="https://hub.xerj.org/contributors/gtxPrime/badge.svg" alt="XERJ Corpus Hub Contributor" />
-  </a>
+<p>
+  <a href="https://github.com/gtxprime/screen-x/releases/latest"><img src="https://img.shields.io/github/v/release/gtxprime/screen-x?style=for-the-badge&color=10b981&labelColor=18181b&logo=android&logoColor=white" alt="Latest Version" /></a>
+  <a href="https://github.com/gtxprime/screen-x/stargazers"><img src="https://img.shields.io/github/stars/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Stars" /></a>
+  <a href="https://github.com/gtxprime/screen-x/network/members"><img src="https://img.shields.io/github/forks/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Forks" /></a>
+  <a href="https://github.com/gtxprime/screen-x/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-21262d?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License" /></a>
+  <a href="https://developer.android.com/about/versions"><img src="https://img.shields.io/badge/Android_API-26--37-21262d?style=for-the-badge&logo=android&logoColor=white" alt="Android API" /></a>
+  <a href="https://github.com/gtxprime/screen-x/releases/latest"><img src="https://img.shields.io/github/downloads/gtxprime/screen-x/total?label=Downloads&logo=github&style=for-the-badge&color=21262d&logoColor=white" alt="Downloads" /></a>
+  <a href="https://hub.xerj.org/contributors/gtxPrime"><img src="https://img.shields.io/badge/XERJ_Corpus_Hub-Contributor-8b5cf6?style=for-the-badge" alt="XERJ Corpus Hub Contributor" /></a>
 </p>
+
+</div>
 
 
   <a href="https://github.com/gtxprime/screen-x/releases/latest">
