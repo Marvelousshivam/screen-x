@@ -284,30 +284,47 @@ object VideoHelper {
 
     /**
      * Converts a raw filename into a humanized, user-friendly display title.
-     * e.g. "ScreenX_1792657573355.mp4" -> "Recording • 1:56 PM"
+     * e.g. "ScreenX_1792657573355.mp4" or "ScreenX_1792661219615_1792663563327.mp4" -> "Recording • 1:56 PM"
      */
     fun getHumanizedTitle(item: RecordedVideo): String {
         val baseName = item.name.substringBeforeLast(".")
-        val videoRegex = Regex("^ScreenX_(\\d+)$")
-        val matchVideo = videoRegex.find(baseName)
-        if (matchVideo != null) {
-            val tsMillis = matchVideo.groupValues[1].toLongOrNull() ?: (item.dateAdded * 1000L)
+        if (baseName.startsWith("ScreenX", ignoreCase = true)) {
+            val allEpochMatches = Regex("(\\d{12,13})").findAll(baseName).toList()
+            val tsMillis = if (allEpochMatches.isNotEmpty()) {
+                allEpochMatches.last().value.toLongOrNull() ?: (if (item.dateAdded > 0) item.dateAdded * 1000L else System.currentTimeMillis())
+            } else if (item.dateAdded > 0) {
+                item.dateAdded * 1000L
+            } else {
+                System.currentTimeMillis()
+            }
             val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(tsMillis))
-            return "Recording • $timeStr"
+            return if (item.isVideo) "Recording • $timeStr" else "Screenshot • $timeStr"
         }
-        val shotRegex = Regex("^ScreenX_Screenshot_(\\d+)$")
-        val matchShot = shotRegex.find(baseName)
-        if (matchShot != null) {
-            val tsMillis = matchShot.groupValues[1].toLongOrNull() ?: (item.dateAdded * 1000L)
-            val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(tsMillis))
-            return "Screenshot • $timeStr"
+        return baseName
+    }
+
+    /**
+     * Short time title for grid cards (e.g. "2:56 PM" or custom user name).
+     */
+    fun getShortTimeTitle(item: RecordedVideo): String {
+        val baseName = item.name.substringBeforeLast(".")
+        if (baseName.startsWith("ScreenX", ignoreCase = true)) {
+            val allEpochMatches = Regex("(\\d{12,13})").findAll(baseName).toList()
+            val tsMillis = if (allEpochMatches.isNotEmpty()) {
+                allEpochMatches.last().value.toLongOrNull() ?: (if (item.dateAdded > 0) item.dateAdded * 1000L else System.currentTimeMillis())
+            } else if (item.dateAdded > 0) {
+                item.dateAdded * 1000L
+            } else {
+                System.currentTimeMillis()
+            }
+            return SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(tsMillis))
         }
         return baseName
     }
 
     /**
      * Returns a human-friendly subtitle line:
-     * e.g. "Today, 22 Oct • 11.3 MB • 1080p"
+     * e.g. "Today • 11.3 MB • 1080p" or "Today • 1.2 MB"
      */
     fun getHumanizedSubtitle(item: RecordedVideo): String {
         val ts = if (item.dateAdded > 0) item.dateAdded * 1000L else System.currentTimeMillis()
@@ -323,8 +340,8 @@ object VideoHelper {
                           now.get(java.util.Calendar.DAY_OF_YEAR) == itemCal.get(java.util.Calendar.DAY_OF_YEAR)
 
         val dateStr = when {
-            isToday -> "Today, " + SimpleDateFormat("d MMM", Locale.getDefault()).format(itemDate)
-            isYesterday -> "Yesterday, " + SimpleDateFormat("d MMM", Locale.getDefault()).format(itemDate)
+            isToday -> "Today"
+            isYesterday -> "Yesterday"
             else -> SimpleDateFormat("d MMM", Locale.getDefault()).format(itemDate)
         }
 
@@ -338,7 +355,7 @@ object VideoHelper {
                 "$dateStr • $sizeStr"
             }
         } else {
-            "$dateStr • $sizeStr • Screenshot"
+            "$dateStr • $sizeStr"
         }
     }
 

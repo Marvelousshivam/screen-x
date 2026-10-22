@@ -46,6 +46,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Camera
 import com.composables.icons.lucide.ChevronDown
@@ -727,7 +733,7 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
+                .background(if (isSystemInDarkTheme()) MaterialTheme.colorScheme.background else Color(0xFFF5F6F9)),
             contentAlignment = Alignment.TopCenter
         ) {
             Column(
@@ -828,8 +834,9 @@ fun HomeScreen(
                         Card(
                             shape = RoundedCornerShape(24.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
+                                containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White
                             ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
@@ -895,8 +902,9 @@ fun HomeScreen(
                         Card(
                             shape = RoundedCornerShape(24.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
+                                containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White
                             ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
@@ -916,7 +924,7 @@ fun HomeScreen(
                                         .clip(CircleShape)
                                         .background(
                                             if (isAudioActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f)
-                                            else MaterialTheme.colorScheme.surfaceVariant
+                                             else MaterialTheme.colorScheme.surfaceVariant
                                         )
                                         .border(
                                             1.dp,
@@ -957,13 +965,15 @@ fun HomeScreen(
                                         text = if (audioSource == "None") {
                                             stringResource(R.string.audio_display_muted)
                                         } else if (audioSource == "MicSystem" && voicePriority) {
-                                            stringResource(R.string.setting_voice_priority_title)
+                                            "Auto-Ducking ON"
                                         } else {
                                             stringResource(R.string.setting_audio_input_title)
                                         },
                                         color = if (audioSource == "MicSystem" && voicePriority) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         lineHeight = 14.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                         fontWeight = if (audioSource == "MicSystem" && voicePriority) FontWeight.SemiBold else FontWeight.Normal
                                     )
                                 }
@@ -983,8 +993,9 @@ fun HomeScreen(
                     Card(
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White
                         ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -1004,31 +1015,19 @@ fun HomeScreen(
                                 .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
-                                ) {
-                                    Icon(
-                                        imageVector = Lucide.Video,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.size(17.dp)
-                                    )
-                                }
                                 Icon(
-                                    imageVector = Lucide.ChevronDown,
+                                    imageVector = Lucide.Video,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(16.dp)
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(17.dp)
                                 )
                             }
                             Column {
@@ -1057,8 +1056,9 @@ fun HomeScreen(
                     Card(
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White
                         ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -1077,35 +1077,23 @@ fun HomeScreen(
                                 .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
-                                ) {
-                                    Icon(
-                                        imageVector = when (orientation) {
-                                            "Auto" -> Lucide.RotateCcw
-                                            "Portrait" -> Lucide.Smartphone
-                                            else -> Lucide.Tablet
-                                        },
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.size(17.dp)
-                                    )
-                                }
                                 Icon(
-                                    imageVector = Lucide.ChevronDown,
+                                    imageVector = when (orientation) {
+                                        "Auto" -> Lucide.RotateCcw
+                                        "Portrait" -> Lucide.Smartphone
+                                        else -> Lucide.Tablet
+                                    },
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(16.dp)
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(17.dp)
                                 )
                             }
                             Column {
@@ -1449,10 +1437,11 @@ fun HomeScreen(
                 
                 // Trim Video Premium Card (sole quick tool)
                 Card(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White
                     ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(78.dp)
@@ -1668,10 +1657,11 @@ fun RecentVideoCard(
     }
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
             .bouncyClickable { onClick() }
@@ -2185,6 +2175,7 @@ fun VideoPlayerDialog(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecentThumbnailItem(
     video: RecordedVideo,
@@ -2194,6 +2185,8 @@ fun RecentThumbnailItem(
     var expandedMenu by remember { mutableStateOf(false) }
     var thumbnail by remember(video.uri) { mutableStateOf<Bitmap?>(null) }
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val isDark = isSystemInDarkTheme()
 
     LaunchedEffect(video.uri) {
         thumbnail = VideoHelper.loadThumbnail(context, video.uri, video.isVideo)
@@ -2201,12 +2194,22 @@ fun RecentThumbnailItem(
 
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark) MaterialTheme.colorScheme.surface else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
         modifier = Modifier
             .width(110.dp)
             .height(175.dp)
-            .bouncyClickable { onClick() }
+            .clip(RoundedCornerShape(16.dp))
+            .combinedClickable(
+                onClick = { onClick() },
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    expandedMenu = true
+                }
+            )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (thumbnail != null) {
@@ -2231,6 +2234,19 @@ fun RecentThumbnailItem(
                     )
                 }
             }
+
+            // Bottom-up subtle black gradient scrim over bottom 48.dp
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f))
+                        )
+                    )
+            )
 
             // Single pill badge at bottom-start
             Box(
@@ -2258,60 +2274,35 @@ fun RecentThumbnailItem(
                 }
             }
 
-            // Options menu button at top-end with subtle frosted backing
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
+            // Long-press context menu
+            DropdownMenu(
+                expanded = expandedMenu,
+                onDismissRequest = { expandedMenu = false }
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.45f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    IconButton(
-                        onClick = { expandedMenu = true },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Lucide.EllipsisVertical,
-                            contentDescription = "Options",
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                }
-                DropdownMenu(
-                    expanded = expandedMenu,
-                    onDismissRequest = { expandedMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(if (video.isVideo) stringResource(R.string.trimmer_play) else stringResource(R.string.home_view_all)) },
-                        onClick = {
-                            expandedMenu = false
-                            onClick()
-                        },
-                        leadingIcon = { Icon(if (video.isVideo) Lucide.Play else Lucide.Image, contentDescription = null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.share)) },
-                        onClick = {
-                            expandedMenu = false
-                            VideoHelper.shareVideo(context, video)
-                        },
-                        leadingIcon = { Icon(Lucide.Share2, contentDescription = null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
-                        onClick = {
-                            expandedMenu = false
-                            onDelete()
-                        },
-                        leadingIcon = { Icon(Lucide.Trash2, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
-                    )
-                }
+                DropdownMenuItem(
+                    text = { Text(if (video.isVideo) stringResource(R.string.trimmer_play) else stringResource(R.string.home_view_all)) },
+                    onClick = {
+                        expandedMenu = false
+                        onClick()
+                    },
+                    leadingIcon = { Icon(if (video.isVideo) Lucide.Play else Lucide.Image, contentDescription = null) }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.share)) },
+                    onClick = {
+                        expandedMenu = false
+                        VideoHelper.shareVideo(context, video)
+                    },
+                    leadingIcon = { Icon(Lucide.Share2, contentDescription = null) }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                    onClick = {
+                        expandedMenu = false
+                        onDelete()
+                    },
+                    leadingIcon = { Icon(Lucide.Trash2, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+                )
             }
         }
     }
