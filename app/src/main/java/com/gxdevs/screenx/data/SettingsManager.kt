@@ -40,24 +40,50 @@ class SettingsManager(private val context: Context) {
         val KEY_ADB_PAIRED       = booleanPreferencesKey("adb_paired")   // true once paired successfully
         val KEY_ADB_PRIVATE_KEY  = stringPreferencesKey("adb_private_key") // Base64 RSA private key
         val KEY_ADB_PUBLIC_KEY   = stringPreferencesKey("adb_public_key")  // Base64 RSA public key
+        // Auto-split and merge ADB recordings past 3-minute limit
+        val KEY_ADB_AUTO_MERGE   = booleanPreferencesKey("adb_auto_merge")
+        // Speaker audio capture in ADB mode (via acoustic mic DSP, 0 MediaProjection dialog)
+        val KEY_ADB_RECORD_AUDIO = booleanPreferencesKey("adb_record_audio")
+        val KEY_ADB_AUDIO_GAIN   = intPreferencesKey("adb_audio_gain_percent")
+        val KEY_ADB_AUDIO_CLARITY = booleanPreferencesKey("adb_audio_clarity")
         // Stop recording when screen turns off
         val KEY_STOP_ON_SCREEN_OFF = booleanPreferencesKey("stop_on_screen_off")
+        // Keep screen awake while recording/countdown
+        val KEY_KEEP_SCREEN_AWAKE  = booleanPreferencesKey("keep_screen_awake")
+        // Live status bar pill (Android 15/16+ Promoted Live Update, One UI 7 Now Bar, HyperOS, ColorOS)
+        val KEY_SHOW_STATUS_BAR_PILL = booleanPreferencesKey("show_status_bar_pill")
         // Automatic update check on app launch
         val KEY_AUTO_CHECK_UPDATES = booleanPreferencesKey("auto_check_updates")
         // Swap primary big card and secondary stealth card on Home Screen
         val KEY_SWAP_HOME_CARDS = booleanPreferencesKey("swap_home_cards")
+        // App language code (en, es, uk, ru, hi)
+        val KEY_LANGUAGE = stringPreferencesKey("app_language")
+        private const val SYNC_PREFS_NAME = "screenx_sync_prefs"
+        private const val SYNC_KEY_LANG = "sync_language"
+
+        fun getLanguageSync(context: Context): String {
+            val prefs = context.getSharedPreferences(SYNC_PREFS_NAME, Context.MODE_PRIVATE)
+            val saved = prefs.getString(SYNC_KEY_LANG, null)
+            if (!saved.isNullOrEmpty()) return saved
+            val deviceLang = java.util.Locale.getDefault().language
+            return if (deviceLang in listOf("es", "uk", "ru", "hi")) deviceLang else "en"
+        }
+    }
+
+    val languageFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_LANGUAGE] ?: getLanguageSync(context)
     }
 
     val fpsFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_FPS] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getMaxSupportedFps(context)
+        preferences[KEY_FPS] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDefaultFps(context)
     }
 
     val resolutionFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_RESOLUTION] ?: "Original"
+        preferences[KEY_RESOLUTION] ?: "1080p"
     }
 
     val bitrateFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_BITRATE] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getMaxSupportedBitrate().coerceAtMost(25000000)
+        preferences[KEY_BITRATE] ?: com.gxdevs.screenx.utils.DeviceCapabilitiesHelper.getDefaultBitrate()
     }
 
     val audioSourceFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -94,6 +120,14 @@ class SettingsManager(private val context: Context) {
         preferences[KEY_STOP_ON_SCREEN_OFF] ?: false
     }
 
+    val keepScreenAwakeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_KEEP_SCREEN_AWAKE] ?: false
+    }
+
+    val showStatusBarPillFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_SHOW_STATUS_BAR_PILL] ?: true
+    }
+
     val autoCheckUpdatesFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[KEY_AUTO_CHECK_UPDATES] ?: true
     }
@@ -127,11 +161,11 @@ class SettingsManager(private val context: Context) {
     }
 
     val micVolumeFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_MIC_VOLUME] ?: 350
+        preferences[KEY_MIC_VOLUME] ?: 200
     }
 
     val internalAudioVolumeFlow: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[KEY_INTERNAL_AUDIO_VOLUME] ?: 35
+        preferences[KEY_INTERNAL_AUDIO_VOLUME] ?: 100
     }
 
     val vocalClarityFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -161,6 +195,22 @@ class SettingsManager(private val context: Context) {
 
     val adbPublicKeyFlow: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[KEY_ADB_PUBLIC_KEY] ?: ""
+    }
+
+    val adbAutoMergeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_AUTO_MERGE] ?: true
+    }
+
+    val adbRecordAudioFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_RECORD_AUDIO] ?: false
+    }
+
+    val adbAudioGainPercentFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_AUDIO_GAIN] ?: 250
+    }
+
+    val adbAudioClarityFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ADB_AUDIO_CLARITY] ?: true
     }
 
     suspend fun setFps(fps: Int) {
@@ -312,9 +362,45 @@ class SettingsManager(private val context: Context) {
         }
     }
 
+    suspend fun setAdbAutoMerge(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_AUTO_MERGE] = enabled
+        }
+    }
+
+    suspend fun setAdbRecordAudio(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_RECORD_AUDIO] = enabled
+        }
+    }
+
+    suspend fun setAdbAudioGainPercent(gainPercent: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_AUDIO_GAIN] = gainPercent
+        }
+    }
+
+    suspend fun setAdbAudioClarity(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ADB_AUDIO_CLARITY] = enabled
+        }
+    }
+
     suspend fun setStopOnScreenOff(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_STOP_ON_SCREEN_OFF] = enabled
+        }
+    }
+
+    suspend fun setKeepScreenAwake(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_KEEP_SCREEN_AWAKE] = enabled
+        }
+    }
+
+    suspend fun setShowStatusBarPill(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_SHOW_STATUS_BAR_PILL] = enabled
         }
     }
 
@@ -328,5 +414,18 @@ class SettingsManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[KEY_SWAP_HOME_CARDS] = swap
         }
+    }
+
+    suspend fun setLanguage(languageCode: String) {
+        context.getSharedPreferences(SYNC_PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(SYNC_KEY_LANG, languageCode)
+            .commit()
+
+        context.dataStore.edit { preferences ->
+            preferences[KEY_LANGUAGE] = languageCode
+        }
+
+        com.gxdevs.screenx.utils.LocaleHelper.updateSystemLocales(context, languageCode)
     }
 }

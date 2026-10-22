@@ -1,4 +1,463 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ScreenX</string>
+
+    <!-- General Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="close">Close</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="done">Done</string>
+    <string name="back">Back</string>
+    <string name="later">Later</string>
+    <string name="confirm">Confirm</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="refresh">Refresh</string>
+    <string name="settings">Settings</string>
+    <string name="library">Library</string>
+    <string name="share">Share</string>
+    <string name="rename">Rename</string>
+    <string name="edit">Edit</string>
+    <string name="all">All</string>
+    <string name="videos">Videos</string>
+    <string name="screenshots">Screenshots</string>
+    <string name="search">Search</string>
+
+    <!-- Language Selector -->
+    <string name="language">Language</string>
+    <string name="app_language">App Language</string>
+    <string name="select_language">Select Language</string>
+    <string name="language_subtitle">Choose your preferred interface language</string>
+    <string name="lang_en">English</string>
+    <string name="lang_es">Español</string>
+    <string name="lang_uk">Українська</string>
+    <string name="lang_ru">Русский</string>
+    <string name="lang_hi">हिन्दी</string>
+
+    <!-- Settings Sections -->
+    <string name="section_storage_safety">STORAGE &amp; SAFETY</string>
+    <string name="section_video_capture">VIDEO CAPTURE</string>
+    <string name="section_audio_voice">AUDIO &amp; VOICE PRIORITY</string>
+    <string name="section_recording_controls">RECORDING CONTROLS</string>
+    <string name="section_appearance_theme">APPEARANCE &amp; THEME</string>
+    <string name="section_stealth_recording">STEALTH RECORDING</string>
+    <string name="section_about">ABOUT SCREENX</string>
+
+    <!-- Storage & Safety Settings -->
+    <string name="setting_safe_storage_title">Safe Storage Auto-Stop</string>
+    <string name="setting_safe_storage_sub">Stops capture automatically before storage runs out</string>
+    <string name="setting_safe_stop_buffer_title">Safe Stop Buffer</string>
+    <string name="setting_safe_stop_buffer_sub">Storage buffer to ensure clean file finalization</string>
+    <string name="dialog_safe_stop_buffer_title">Safe Stop Storage Threshold</string>
+    <string name="setting_internal_storage_title">Internal Storage</string>
+    <string name="setting_internal_storage_sub_fmt">%1$s GB free • %2$s</string>
+    <string name="safe_stop_active">Safe stop active</string>
+    <string name="safe_stop_off">Safe stop off</string>
+    <string name="percent_used_fmt">%1$d%% Used</string>
+    <string name="setting_save_location_title">Save Location</string>
+    <string name="setting_save_location_sub">Shared system Movies/ScreenX directory</string>
+    <string name="save_location_movies">Movies</string>
+    <string name="toast_location_locked">Location locked to standard Movies/ScreenX</string>
+
+    <!-- Video Capture Settings -->
+    <string name="setting_resolution_title">Resolution</string>
+    <string name="setting_resolution_sub">Screen capture video resolution</string>
+    <string name="dialog_select_resolution">Select Resolution</string>
+    <string name="setting_fps_title">Frame Rate</string>
+    <string name="setting_fps_sub">Frames per second motion rate</string>
+    <string name="dialog_select_fps">Select Frame Rate</string>
+    <string name="setting_bitrate_title">Video Bitrate</string>
+    <string name="setting_bitrate_sub">Video encoding bitrate and quality</string>
+    <string name="dialog_select_bitrate">Select Bitrate</string>
+    <string name="setting_orientation_title">Orientation</string>
+    <string name="setting_orientation_sub">Screen orientation lock or match</string>
+    <string name="orientation_auto">Auto</string>
+    <string name="orientation_portrait">Portrait</string>
+    <string name="orientation_landscape">Landscape</string>
+
+    <!-- Audio Settings -->
+    <string name="setting_audio_input_title">Audio Input</string>
+    <string name="dialog_select_audio">Select Audio Source</string>
+    <string name="audio_sub_mic">Microphone voice capture</string>
+    <string name="audio_sub_system">Internal device audio</string>
+    <string name="audio_sub_dual">Mic and internal audio with ducking</string>
+    <string name="audio_sub_none">Muted audio track</string>
+    <string name="audio_sub_stealth_locked">Locked to No Audio during Stealth recording</string>
+    <string name="toast_audio_locked_stealth">Audio is locked to \'No Audio\' while Stealth Recording is set as default</string>
+    <string name="audio_opt_mic">Microphone Only</string>
+    <string name="audio_opt_system">Internal Audio Only</string>
+    <string name="audio_opt_dual">Mic + Internal Audio (Combined)</string>
+    <string name="audio_opt_none">No Audio (Muted)</string>
+    <string name="audio_display_mic">Microphone</string>
+    <string name="audio_display_system">Internal</string>
+    <string name="audio_display_dual">Mic + Internal</string>
+    <string name="audio_display_none">No Audio</string>
+    <string name="audio_display_muted">Muted</string>
+    <string name="setting_voice_priority_title">Voice Priority (Auto-Ducking)</string>
+    <string name="setting_voice_priority_sub">Auto-lowers game sound when you speak so commentary is clear</string>
+    <string name="setting_mic_boost_title">Microphone Boost</string>
+    <string name="setting_mic_boost_sub">Digital preamp gain for voice capture</string>
+    <string name="dialog_mic_boost">Microphone Gain Boost</string>
+    <string name="setting_internal_audio_mix_title">Internal Audio Mix</string>
+    <string name="setting_internal_audio_mix_sub_dual">Game audio volume balance (Earphones recommended for dual audio)</string>
+    <string name="setting_internal_audio_mix_sub_sys">System audio level balance</string>
+    <string name="dialog_internal_audio_mix">Internal Audio Mix Level</string>
+    <string name="setting_vocal_clarity_title">Vocal Clarity Filter</string>
+    <string name="setting_vocal_clarity_sub">120Hz high-pass filter to reduce phone rumble</string>
+
+    <!-- Recording Controls Settings -->
+    <string name="setting_countdown_title">Start Countdown</string>
+    <string name="setting_countdown_sub">Delay timer before capture begins</string>
+    <string name="dialog_select_countdown">Select Countdown</string>
+    <string name="countdown_off">Off</string>
+    <string name="setting_shake_stop_title">Shake to Stop</string>
+    <string name="setting_shake_stop_sub">Shake phone firmly to end recording</string>
+    <string name="setting_screen_off_stop_title">Stop on Screen Off</string>
+    <string name="setting_screen_off_stop_sub">End recording of any type when screen turns off or locks</string>
+    <string name="setting_keep_screen_awake_title">Keep Screen Awake</string>
+    <string name="setting_keep_screen_awake_sub">Prevent the screen from turning off or sleeping while recording or counting down</string>
+    <string name="setting_status_bar_pill_title">Live Status Bar Pill</string>
+    <string name="setting_status_bar_pill_sub">Display countdown and recording pill in status bar and Now Bar on supported devices</string>
+    <string name="notif_countdown_title_fmt">Starting in %1$ds…</string>
+    <string name="notif_countdown_sub">Screen recording will begin shortly</string>
+    <string name="notif_action_cancel">Cancel</string>
+    <string name="toast_notif_permission_fallback">Notifications disabled. Floating controls enabled as fallback so you can stop recording.</string>
+    <string name="toast_stealth_notif_fallback">Notifications disabled. Stealth recording active; stop it via ScreenX or Quick Settings.</string>
+    <string name="toast_notif_denied_warning">Notification permission denied. Recording controls &amp; pill will not appear in the status bar.</string>
+    <string name="setting_status_bar_pill_perm_warning">Notifications are disabled. Tap here to enable permission in Settings.</string>
+    <string name="setting_floating_controls_title">Floating Controls</string>
+    <string name="setting_floating_controls_sub">On-screen quick controls overlay</string>
+    <string name="dialog_floating_ball">Floating Control Ball</string>
+    <string name="floating_hide_always">Hide all the time</string>
+    <string name="floating_while_recording">Only while recording</string>
+    <string name="floating_always">All the time (shortcut)</string>
+    <string name="floating_status_hidden">Hidden</string>
+    <string name="floating_status_always">Always Active</string>
+    <string name="floating_status_recording">Recording</string>
+    <string name="setting_hide_ball_rec_title">Hide Ball While Recording</string>
+    <string name="setting_hide_ball_rec_sub">Automatically hide floating controls while capture is in progress</string>
+    <string name="toast_overlay_permission_ball">Permission required to show floating control ball</string>
+    <string name="toast_allow_overlay">Please allow \'Appear on top\' to display floating ball</string>
+    <string name="setting_qs_tile_title">Quick Settings Tile</string>
+    <string name="setting_qs_tile_sub">Add ScreenX tile to quick settings shade</string>
+    <string name="qs_tile_add_btn">Add Tile</string>
+    <string name="toast_tile_added">ScreenX tile added to Quick Settings!</string>
+    <string name="toast_tile_manual_guide">Pull down notification shade twice, tap Edit/Pencil icon, and drag ScreenX to active tiles.</string>
+
+    <!-- Appearance & Theme Settings -->
+    <string name="setting_theme_mode_title">Theme Mode</string>
+    <string name="setting_theme_mode_sub">Dark, light, or system default</string>
+    <string name="dialog_select_theme">Select App Theme</string>
+    <string name="theme_light">Light Mode</string>
+    <string name="theme_dark">Dark Mode</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_dynamic">Dynamic Wallpaper</string>
+
+    <!-- Stealth Recording Settings -->
+    <string name="setting_stealth_rec_title">Stealth Recording</string>
+    <string name="setting_stealth_rec_sub">Undetectable background capture for protected apps</string>
+    <string name="setting_wireless_adb_title">Wireless ADB Pairing</string>
+    <string name="setting_wireless_adb_sub_paired">Device paired and ready for stealth capture</string>
+    <string name="setting_wireless_adb_sub_unpaired">Pair device via wireless debugging</string>
+    <string name="badge_paired">Paired</string>
+    <string name="badge_set_up">Set Up</string>
+    <string name="setting_default_engine_title">Default Engine</string>
+    <string name="setting_default_engine_sub">Engine used by standard record button</string>
+    <string name="dialog_default_recording_mode">Default Recording Mode</string>
+    <string name="mode_mediaprojection">MediaProjection (Default)</string>
+    <string name="mode_stealth">Stealth Only</string>
+    <string name="mode_ask">Ask Every Time</string>
+    <string name="mode_display_stealth">Stealth</string>
+    <string name="mode_display_prompt">Prompt</string>
+    <string name="mode_display_standard">Standard</string>
+    <string name="setting_swap_cards_title">Swap Main Card on Home</string>
+    <string name="setting_swap_cards_sub">Set Stealth Recording as primary big card and standard capture as secondary</string>
+    <string name="setting_stealth_rules_title">Stealth Details &amp; Rules</string>
+    <string name="setting_stealth_rules_sub">Tap to view stealth limitations</string>
+    <string name="badge_stealth">Stealth</string>
+
+    <!-- About Settings -->
+    <string name="setting_about_app_title">ScreenX Recorder</string>
+    <string name="setting_about_app_sub_fmt">Version %1$s • Pro Screen Capture</string>
+    <string name="setting_check_updates_title">Check for Updates</string>
+    <string name="setting_check_updates_sub_idle">Check GitHub releases for updates</string>
+    <string name="setting_check_updates_sub_checking">Connecting to GitHub...</string>
+    <string name="status_checking">Checking...</string>
+    <string name="toast_update_latest_fmt">You\'re up to date! ScreenX v%1$s is the latest version.</string>
+    <string name="toast_update_error_fmt">Could not check for updates: %1$s</string>
+    <string name="setting_auto_check_updates_title">Auto-Check for Updates</string>
+    <string name="setting_auto_check_updates_sub">Automatically check GitHub for new releases on startup</string>
+    <string name="setting_refresh_rate_title">Display Refresh Rate</string>
+    <string name="setting_refresh_rate_sub_fmt">Panel supports up to %1$d Hz</string>
+
+    <!-- ADB Pairing Dialog -->
+    <string name="adb_pairing_dialog_title">Wireless ADB Pairing</string>
+    <string name="adb_pairing_step_header">How to Pair:</string>
+    <string name="adb_pairing_step1">1. Go to Settings &gt; System &gt; Developer options &gt; Wireless debugging.</string>
+    <string name="adb_pairing_step2">2. Tap \'Pair device with pairing code\'.</string>
+    <string name="adb_pairing_step3">3. Enter the 6-digit code and the pairing port shown on that screen below.</string>
+    <string name="adb_pairing_port_label">Pairing Port</string>
+    <string name="adb_pairing_code_label">6-Digit Pairing Code</string>
+    <string name="adb_pairing_btn">Pair Device</string>
+    <string name="adb_pairing_status_pairing">Pairing...</string>
+    <string name="adb_pairing_success">Paired successfully!</string>
+    <string name="adb_pairing_failed_fmt">Pairing failed: %1$s</string>
+    <string name="adb_pairing_missing_fields">Enter both the pairing port and the 6-digit code.</string>
+    <string name="adb_pairing_already_paired">Wireless ADB is paired and ready.</string>
+    <string name="adb_unpair_btn">Unpair</string>
+
+    <!-- ADB Limitations Dialog -->
+    <string name="adb_rules_title">Stealth Recording Rules &amp; Limitations</string>
+    <string name="adb_rules_subtitle">Important guidelines for undetectable capture</string>
+    <string name="adb_rules_audio_title">No Audio Capture</string>
+    <string name="adb_rules_audio_desc">Android\'s internal screenrecord binary does not capture audio. Stealth recordings are video-only.</string>
+    <string name="adb_rules_orientation_title">Fixed Device Orientation</string>
+    <string name="adb_rules_orientation_desc">Rotation during capture is not supported by ADB. Record in the orientation you started with.</string>
+    <string name="adb_rules_reboot_title">Pairing Resets on Reboot</string>
+    <string name="adb_rules_reboot_desc">Wireless debugging ports change when the device restarts. You will need to re-pair after a reboot.</string>
+    <string name="adb_rules_wifi_title">Wi-Fi Connection Required</string>
+    <string name="adb_rules_wifi_desc">Wireless debugging requires an active Wi-Fi connection on the device.</string>
+    <string name="adb_rules_understand">I Understand</string>
+    <string name="adb_rules_enable_btn">Enable Stealth Recording</string>
+
+    <!-- Home Screen -->
+    <string name="home_ready_to_record">Ready to Record</string>
+    <string name="home_recording_screen">Recording Screen...</string>
+    <string name="home_ready_for_stealth">Ready for Stealth</string>
+    <string name="home_stealth_recording">Stealth Recording...</string>
+    <string name="home_record_btn">Record</string>
+    <string name="home_recording_btn">Recording</string>
+    <string name="home_tap_to_start">Tap to start capture</string>
+    <string name="home_tap_to_stop">Tap to stop capture</string>
+    <string name="home_rec_badge">REC</string>
+    <string name="home_stealth_title">Stealth Recording</string>
+    <string name="home_stealth_sub">Undetectable capture for protected apps</string>
+    <string name="home_standard_title">Standard Capture</string>
+    <string name="home_standard_sub">MediaProjection screen recording</string>
+    <string name="home_start_stealth">Start Stealth</string>
+    <string name="home_stop_stealth">Stop Stealth</string>
+    <string name="home_pair_adb">Pair ADB</string>
+    <string name="home_unpaired">Not Paired</string>
+    <string name="home_take_screenshot">Screenshot</string>
+    <string name="home_trim_video">Trimmer</string>
+    <string name="home_recent_recordings">Recent Recordings</string>
+    <string name="home_view_all">View All</string>
+    <string name="home_no_recordings">No recordings yet</string>
+    <string name="home_no_recordings_sub">Your screen recordings and screenshots will appear here</string>
+    <string name="home_storage_info_fmt">%1$s GB Free • %2$d%% Used</string>
+    <string name="home_toast_finalizing">Finalizing recording, please wait...</string>
+    <string name="home_toast_refreshed_fmt">Library refreshed (%1$d items)</string>
+    <string name="home_toast_stealth_not_paired">Stealth Recording is not paired. Please complete setup first.</string>
+    <string name="home_toast_stealth_error_fmt">Could not start Stealth recording: %1$s</string>
+
+    <!-- Gallery / Library Screen -->
+    <string name="library_title">Library</string>
+    <string name="library_all">All</string>
+    <string name="library_videos">Videos</string>
+    <string name="library_screenshots">Screenshots</string>
+    <string name="library_no_items">No recordings yet</string>
+    <string name="library_no_items_sub">Capture your first screen recording to see it here</string>
+    <string name="library_delete_dialog_title">Delete Recording</string>
+    <string name="library_delete_dialog_msg">Are you sure you want to permanently delete this item?</string>
+    <string name="library_rename_dialog_title">Rename File</string>
+    <string name="library_rename_label">New File Name</string>
+    <string name="library_rename_success">Renamed successfully</string>
+    <string name="library_rename_failed">Failed to rename file</string>
+    <string name="library_deleted_success">Recording deleted</string>
+
+    <!-- Video Trimmer Screen -->
+    <string name="trimmer_title">Video Editor</string>
+    <string name="trimmer_mode_trim">Trim Video</string>
+    <string name="trimmer_mode_delete">Delete Segment</string>
+    <string name="trimmer_mode_split">Split Video</string>
+    <string name="trimmer_no_video">Select a Video to Edit</string>
+    <string name="trimmer_no_video_sub">Choose a recorded video from your library to trim, cut segments, or split into parts.</string>
+    <string name="trimmer_open_file">Open Video File</string>
+    <string name="trimmer_save_changes">Save</string>
+    <string name="trimmer_export">Export Video</string>
+    <string name="trimmer_play">Play</string>
+    <string name="trimmer_pause">Pause</string>
+    <string name="trimmer_reset">Reset</string>
+    <string name="trimmer_start_time">Start: %1$s</string>
+    <string name="trimmer_end_time">End: %1$s</string>
+    <string name="trimmer_duration">Duration: %1$s</string>
+    <string name="trimmer_toast_min_duration">Selection must be at least 0.5 seconds</string>
+    <string name="trimmer_toast_trim_saved">Trimmed video saved!</string>
+    <string name="trimmer_toast_trim_failed_fmt">Trim failed: %1$s</string>
+    <string name="trimmer_toast_delete_min">Delete segment must be at least 0.5 seconds</string>
+    <string name="trimmer_toast_delete_saved">Segment deleted &amp; saved!</string>
+    <string name="trimmer_toast_delete_failed_fmt">Delete failed: %1$s</string>
+    <string name="trimmer_toast_split_start_min">Split point must be at least 0.5s from start</string>
+    <string name="trimmer_toast_split_end_min">Split point must be at least 0.5s from end</string>
+    <string name="trimmer_toast_split_saved">Split into Part 1 &amp; Part 2 — saved!</string>
+    <string name="trimmer_toast_split_failed_fmt">Split failed: %1$s</string>
+    <string name="trimmer_toast_split_at_fmt">Video split at %1$s</string>
+    <string name="trimmer_toast_split_boundary">Cannot split too close to segment boundaries</string>
+    <string name="trimmer_toast_select_segment">Please select a segment first</string>
+    <string name="trimmer_toast_all_deleted">Cannot save with all segments deleted</string>
+    <string name="trimmer_toast_edited_saved">Video edited &amp; saved successfully!</string>
+    <string name="trimmer_toast_export_failed_fmt">Export failed: %1$s</string>
+
+    <!-- Update Dialog -->
+    <string name="update_dialog_title">ScreenX Update</string>
+    <string name="update_dialog_current_fmt">Current: v%1$s • GitHub Release</string>
+    <string name="update_dialog_download_btn">Download ScreenX Update (APK)</string>
+    <string name="update_dialog_github_btn">View on GitHub</string>
+    <string name="update_dialog_later_btn">Later</string>
+
+    <!-- Notifications & Services -->
+    <string name="notif_title_recorder">ScreenX Recorder</string>
+    <string name="notif_status_recording">Recording Screen...</string>
+    <string name="notif_status_paused">Recording Paused</string>
+    <string name="notif_status_floating">Floating ball is active • Tap to open</string>
+    <string name="notif_action_pause">Pause</string>
+    <string name="notif_action_resume">Resume</string>
+    <string name="notif_action_stop">Stop</string>
+    <string name="notif_action_exit">Exit</string>
+    <string name="notif_action_hide_ball">Hide Ball</string>
+    <string name="notif_title_stealth">ScreenX — Stealth Recording</string>
+    <string name="notif_status_stealth">Stealth recording in progress</string>
+    <string name="notif_channel_name">Screen Recording Service</string>
+    <string name="notif_channel_desc">Shows ongoing screen recording notification with controls</string>
+    <string name="toast_permission_denied">Screen capture permission denied</string>
+    <string name="toast_overlay_required">Display over other apps permission is required for floating controls</string>
+    <string name="toast_video_deleted">Video deleted successfully</string>
+
+    <!-- Additional Screen Strings -->
+    <string name="discard_changes_title">Discard changes?</string>
+    <string name="discard_changes_msg">You have unsaved edits. Are you sure you want to discard them and exit?</string>
+    <string name="discard">Discard</string>
+    <string name="split_here">Split here</string>
+    <string name="restore_part">Restore part</string>
+    <string name="delete_part">Delete part</string>
+    <string name="keep_app_open">Please keep ScreenX open</string>
+    <string name="choose_from_device">Choose from Device</string>
+    <string name="browse_internal_storage">Browse files from internal storage</string>
+    <string name="recent_captures">Recent Captures</string>
+    <string name="no_recordings_available">No recordings available</string>
+    <string name="start_pairing_helper">Start Pairing Helper</string>
+    <string name="open_developer_settings">Open Developer Settings</string>
+    <string name="listening_pairing_dialog">Listening for pairing dialog…</string>
+    <string name="tap_pair_device_code">Tap \'Pair device with pairing code\' in Wireless debugging</string>
+    <string name="pairing_complete">Pairing Complete</string>
+    <string name="device_paired_stealth">Device is paired and ready for stealth recording.</string>
+    <string name="available_space">Available Space</string>
+    <string name="auto_rotate">Auto Rotate</string>
+    <string name="fps_video_fmt">%1$d FPS Video</string>
+    <string name="finalizing_recording">Finalizing &amp; Saving Recording...</string>
+    <string name="merging_audio_gallery">Merging audio and adding to gallery</string>
+    <string name="no_recordings_tap_refresh">No recordings visible. Tap to refresh</string>
+    <string name="stealth_rules_bypass">Bypasses capture detection in Snapchat, Instagram, and banking apps without triggering alerts.</string>
+    <string name="stealth_rule_3min">3-Minute Session Limit</string>
+    <string name="stealth_rule_3min_desc">Android limits screenrecord sessions to 3 minutes. ScreenX automatically restarts in segments.</string>
+    <string name="stealth_rule_wireless">One-Time Wireless Pairing</string>
+    <string name="stealth_rule_wireless_desc">Requires wireless debugging pairing once on Android 11+.</string>
+    <string name="got_it">Got it</string>
+    <string name="enable">Enable</string>
+    <string name="edit_video">Edit Video</string>
+    <string name="save_video">Save Video</string>
+    <string name="quick_tools">Quick Tools</string>
+
+    <string name="adb_pairing_dialog_stealth_setup">Stealth Recording Setup</string>
+    <string name="adb_status_connected_ready">Status: Connected &amp; Ready</string>
+    <string name="adb_status_paired_needs_connect">Status: Paired (Needs Connect)</string>
+    <string name="adb_status_onetime_pairing">One-time wireless pairing</string>
+    <string name="adb_tab_quick_notification">Quick Notification</string>
+    <string name="adb_tab_manual_port">Manual / Port Entry</string>
+    <string name="adb_pair_notification_hint">Pair easily using Android\'s notification reply:</string>
+    <string name="adb_step1_launch_title">Launch Wireless Debugging</string>
+    <string name="adb_step1_launch_desc">Tap \'Start Pairing Helper\' below. ScreenX opens Android Developer Options.</string>
+    <string name="adb_step2_pair_code_title">Tap \'Pair device with pairing code\'</string>
+    <string name="adb_step2_pair_code_desc">Turn on Wireless Debugging and tap to reveal the 6-digit code.</string>
+    <string name="adb_step3_reply_title">Reply on ScreenX Notification</string>
+    <string name="adb_step3_reply_desc">Pull down your notification shade, tap Reply, type the 6-digit code, and send.</string>
+    <string name="stop">Stop</string>
+    <string name="adb_manual_step1_title">Step 1: Pair with Device</string>
+    <string name="adb_manual_step1_desc">From Wireless Debugging → \'Pair device with pairing code\':\n(Tip: Keep dialog open via Split-Screen so the port stays active)</string>
+    <string name="adb_device_ip_label">Device IP Address</string>
+    <string name="adb_manual_step2_title">Step 2: Connect to Port</string>
+    <string name="adb_manual_step2_desc">Main port shown on Wireless Debugging (e.g. 41927) or leave blank for Auto:</string>
+    <string name="adb_connect_port_label">Connection Port (Optional)</string>
+    <string name="adb_connect_btn">Connect</string>
+    <string name="adb_err_invalid_port">Enter a valid 5-digit pairing port</string>
+    <string name="adb_err_invalid_code">Enter the 6-digit pairing code</string>
+    <string name="adb_success_paired_now_connect">Pairing successful! Now connect below.</string>
+    <string name="adb_success_connected">Connected! Stealth Recording is ready.</string>
+    <string name="adb_err_connect_failed">Connection failed</string>
+    <string name="stealth_enable_title">Enable Stealth Recording</string>
+    <string name="stealth_review_desc">Review important details before enabling</string>
+    <string name="stealth_features_limitations">Features &amp; limitations</string>
+    <string name="fully_undetectable">Fully Undetectable</string>
+    <string name="keep_editing">Keep Editing</string>
+    <string name="trimmer_hint_timeline">Tap timeline to select parts, then split or delete/restore them</string>
+    <string name="trimmer_sel_start">Selected Start</string>
+    <string name="trimmer_sel_duration">Selected Duration</string>
+    <string name="trimmer_sel_end">Selected End</string>
+    <string name="trimmer_start">Start</string>
+    <string name="trimmer_end">End</string>
+    <string name="trimmer_duration_label">Duration</string>
+    <string name="trimmer_deleted_tag">DELETED</string>
+
+    <!-- Services, Tiles & Toasts -->
+    <string name="toast_recording_stopped">Recording stopped</string>
+    <string name="toast_recording_started">Recording started</string>
+    <string name="toast_screenshot_saved">Screenshot saved to Pictures/ScreenX</string>
+    <string name="toast_stealth_start_failed">Failed to start Stealth service: %1$s</string>
+    <string name="toast_stealth_connect_failed">Could not connect to Wireless ADB. Ensure Wireless Debugging is ON in Developer Options.</string>
+    <string name="toast_stealth_no_video">Stealth recording ended without saving video</string>
+    <string name="toast_stealth_error_fmt">Stealth error: %1$s</string>
+    <string name="toast_browser_error">Could not open browser: %1$s</string>
+    <string name="tile_stop_stealth">Stop Stealth Record</string>
+    <string name="tile_stop_recording">Stop Recording</string>
+    <string name="tile_stealth_recording">Stealth Recording…</string>
+    <string name="adb_pairing_notif_waiting_title">ScreenX: Waiting for Pairing Dialog</string>
+    <string name="adb_pairing_notif_waiting_sub">In Developer Options, tap \'Pair device with pairing code\'</string>
+    <string name="adb_pairing_notif_ready_title">ScreenX: Enter Pairing Code</string>
+    <string name="adb_pairing_notif_ready_sub_fmt">Found port %1$d. Tap Reply and enter the 6-digit code shown on screen.</string>
+    <string name="adb_pairing_notif_pairing_title">ScreenX: Pairing with Device…</string>
+    <string name="adb_pairing_notif_pairing_sub">Authenticating with wireless debugging daemon…</string>
+    <string name="adb_pairing_notif_failed_title">ScreenX: Pairing Failed</string>
+    <string name="adb_pairing_notif_failed_sub">Pairing failed. Tap Retry with a fresh code.</string>
+    <string name="reply">Reply</string>
+    <string name="retry">Retry</string>
+    <string name="adb_port_auto_placeholder">e.g. 41927 or blank for auto</string>
+    <string name="toast_shake_detected">Shake detected! Stopping…</string>
+    <string name="toast_storage_critically_low_fmt">Storage is critically low (%1$d MB free)! At least %2$d MB required to record safely.</string>
+    <string name="toast_storage_almost_full_fmt">Storage is almost full (%1$d MB left)! Recording auto-stopped &amp; finalized safely.</string>
+    <string name="toast_storage_safeguard_reason">Storage full safeguard: Recording saved safely!</string>
+    <string name="toast_record_start_failed_fmt">Failed to start recording: %1$s</string>
+    <string name="toast_mic_not_active">Microphone is not active in this recording mode</string>
+    <string name="toast_mic_muted">Microphone muted</string>
+    <string name="toast_mic_unmuted">Microphone unmuted</string>
+    <string name="toast_stealth_not_ready">Stealth recording connection is not ready. Please re-pair in Settings.</string>
+    <string name="adb_pairing_notif_success_title">ScreenX Stealth Paired Successfully!</string>
+    <string name="adb_pairing_notif_success_sub">Tap to open ScreenX. Stealth Recording is now ready.</string>
+    <string name="adb_pairing_notif_success_toast">ScreenX Paired Successfully!</string>
+    <string name="adb_pairing_code_label_short">6-digit code</string>
+    <string name="toast_mic_init_failed">Microphone could not be initialized — check app permissions.</string>
+    <string name="toast_mic_unavailable_internal_only">Microphone unavailable. Recording internal audio only.</string>
+    <string name="toast_internal_audio_android10">Internal audio capture requires Android 10 or newer.</string>
+    <string name="adb_pairing_port_placeholder">e.g. 33625</string>
+
+    <!-- Diagnostics & Logs Export -->
+    <string name="section_diagnostics">DIAGNOSTICS &amp; LOGS</string>
+    <string name="setting_export_logs_title">Export Diagnostic Logs (log.txt)</string>
+    <string name="setting_export_logs_sub">Generate and share in-depth log.txt to diagnose orientation &amp; device bugs</string>
+    <string name="toast_exporting_logs">Generating diagnostic log.txt…</string>
+    <string name="toast_logs_ready">Diagnostic log ready to share</string>
+    <string name="toast_logs_failed">Failed to export logs: %1$s</string>
+
+    <!-- ADB Continuous Recording & Auto-Merge -->
+    <string name="setting_adb_auto_merge_title">Auto-Continue Past 3 Min &amp; Merge</string>
+    <string name="setting_adb_auto_merge_sub">Bypasses Android\'s 3-minute limit. Seamlessly auto-starts the next segment and merges all parts into a single video.</string>
+    <string name="setting_adb_record_speaker_title">Record Audio from Speaker</string>
+    <string name="setting_adb_record_speaker_sub">Captures game &amp; app audio coming from device speakers with noise clearing and volume boost. No permission dialog required.</string>
+    <string name="toast_adb_merging">ScreenX is merging recordings into a single file...</string>
+    <string name="toast_adb_merged_success">Recordings merged successfully and saved</string>
+    <string name="toast_adb_merge_fallback">Auto-merge failed; individual recording parts were saved</string>
+    <string name="notif_saving_progress">Finalizing and saving video to gallery…</string>
+    <string name="notif_merging_progress_fmt">Merging %1$d recording parts into a single video…</string>
 </resources>

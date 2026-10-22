@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ScreenX</string>
+
+    <!-- General Common -->
+    <string name="ok">ОК</string>
+    <string name="cancel">Скасувати</string>
+    <string name="save">Зберегти</string>
+    <string name="delete">Видалити</string>
+    <string name="close">Закрити</string>
+    <string name="dismiss">Відхилити</string>
+    <string name="done">Готово</string>
+    <string name="back">Назад</string>
+    <string name="later">Пізніше</string>
+    <string name="confirm">Підтвердити</string>
+    <string name="yes">Так</string>
+    <string name="no">Ні</string>
+    <string name="refresh">Оновити</string>
+    <string name="settings">Налаштування</string>
+    <string name="library">Медіатека</string>
+    <string name="share">Поділитися</string>
+    <string name="rename">Перейменувати</string>
+    <string name="edit">Редагувати</string>
+    <string name="all">Усі</string>
+    <string name="videos">Відео</string>
+    <string name="screenshots">Скриншоти</string>
+    <string name="search">Пошук</string>
+
+    <!-- Language Selector -->
+    <string name="language">Мова</string>
+    <string name="app_language">Мова застосунку</string>
+    <string name="select_language">Оберіть мову</string>
+    <string name="language_subtitle">Оберіть бажану мову інтерфейсу</string>
+    <string name="lang_en">English</string>
+    <string name="lang_es">Español</string>
+    <string name="lang_uk">Українська</string>
+    <string name="lang_ru">Русский</string>
+    <string name="lang_hi">हिन्दी</string>
+
+    <!-- Settings Sections -->
+    <string name="section_storage_safety">ПАМ\'ЯТЬ ТА БЕЗПЕКА</string>
+    <string name="section_video_capture">ЗАПИС ВІДЕО</string>
+    <string name="section_audio_voice">АУДІО ТА ПРІОРИТЕТ ГОЛОСУ</string>
+    <string name="section_recording_controls">КЕРУВАННЯ ЗАПИСОМ</string>
+    <string name="section_appearance_theme">ЗОВНІШНІЙ ВИГЛЯД ТА ТЕМА</string>
+    <string name="section_stealth_recording">ПРИХОВАНИЙ ЗАПИС</string>
+    <string name="section_about">ПРО SCREENX</string>
+
+    <!-- Storage & Safety Settings -->
+    <string name="setting_safe_storage_title">Автозупинка при браку пам\'яті</string>
+    <string name="setting_safe_storage_sub">Автоматично зупиняє запис до вичерпання вільного місця</string>
+    <string name="setting_safe_stop_buffer_title">Буфер безпечної зупинки</string>
+    <string name="setting_safe_stop_buffer_sub">Резерв пам\'яті для коректного збереження файлу</string>
+    <string name="dialog_safe_stop_buffer_title">Поріг буфера безпеки</string>
+    <string name="setting_internal_storage_title">Внутрішня пам\'ять</string>
+    <string name="setting_internal_storage_sub_fmt">%1$s ГБ вільно • %2$s</string>
+    <string name="safe_stop_active">Безпечна зупинка активна</string>
+    <string name="safe_stop_off">Безпечна зупинка вимкнена</string>
+    <string name="percent_used_fmt">%1$d%% Зайнято</string>
+    <string name="setting_save_location_title">Місце збереження</string>
+    <string name="setting_save_location_sub">Спільна системна папка Movies/ScreenX</string>
+    <string name="save_location_movies">Movies</string>
+    <string name="toast_location_locked">Місце зафіксовано в стандартній папці Movies/ScreenX</string>
+
+    <!-- Video Capture Settings -->
+    <string name="setting_resolution_title">Роздільна здатність</string>
+    <string name="setting_resolution_sub">Роздільна здатність запису екрана</string>
+    <string name="dialog_select_resolution">Виберіть роздільну здатність</string>
+    <string name="setting_fps_title">Частота кадрів (FPS)</string>
+    <string name="setting_fps_sub">Кількість кадрів на секунду для плавності</string>
+    <string name="dialog_select_fps">Виберіть частоту кадрів</string>
+    <string name="setting_bitrate_title">Бітрейт відео</string>
+    <string name="setting_bitrate_sub">Швидкість кодування та якість відеопотоку</string>
+    <string name="dialog_select_bitrate">Виберіть бітрейт</string>
+    <string name="setting_orientation_title">Орієнтація</string>
+    <string name="setting_orientation_sub">Блокування або автопідлаштування орієнтації</string>
+    <string name="orientation_auto">Авто</string>
+    <string name="orientation_portrait">Портретна</string>
+    <string name="orientation_landscape">Альбомна</string>
+
+    <!-- Audio Settings -->
+    <string name="setting_audio_input_title">Джерело аудіо</string>
+    <string name="dialog_select_audio">Виберіть джерело аудіо</string>
+    <string name="audio_sub_mic">Запис голосу з мікрофона</string>
+    <string name="audio_sub_system">Внутрішній звук пристрою</string>
+    <string name="audio_sub_dual">Мікрофон та системний звук з приглушенням</string>
+    <string name="audio_sub_none">Без звукової доріжки</string>
+    <string name="audio_sub_stealth_locked">Без звуку під час прихованого запису</string>
+    <string name="toast_audio_locked_stealth">Звук заблоковано в режимі \'Без звуку\', коли прихований запис є основним</string>
+    <string name="audio_opt_mic">Тільки мікрофон</string>
+    <string name="audio_opt_system">Тільки внутрішній звук</string>
+    <string name="audio_opt_dual">Мікрофон + Внутрішній звук (Спільно)</string>
+    <string name="audio_opt_none">Без звуку (Вимкнено)</string>
+    <string name="audio_display_mic">Мікрофон</string>
+    <string name="audio_display_system">Внутрішній</string>
+    <string name="audio_display_dual">Мікр. + Внутрішній</string>
+    <string name="audio_display_none">Без звуку</string>
+    <string name="audio_display_muted">Вимкнено</string>
+    <string name="setting_voice_priority_title">Пріоритет голосу (Автоприглушення)</string>
+    <string name="setting_voice_priority_sub">Автоматично приглушує звук гри під час мовлення для чіткості коментарів</string>
+    <string name="setting_mic_boost_title">Підсилення мікрофона</string>
+    <string name="setting_mic_boost_sub">Цифровий передпідсилювач для запису голосу</string>
+    <string name="dialog_mic_boost">Рівень підсилення мікрофона</string>
+    <string name="setting_internal_audio_mix_title">Баланс внутрішнього звуку</string>
+    <string name="setting_internal_audio_mix_sub_dual">Гучність ігрового аудіо (Рекомендовано навушники для подвійного звуку)</string>
+    <string name="setting_internal_audio_mix_sub_sys">Рівень гучності системного аудіо</string>
+    <string name="dialog_internal_audio_mix">Рівень внутрішнього аудіо</string>
+    <string name="setting_vocal_clarity_title">Фільтр чіткості голосу</string>
+    <string name="setting_vocal_clarity_sub">Фільтр високих частот 120 Гц для усунення низькочастотного гулу</string>
+
+    <!-- Recording Controls Settings -->
+    <string name="setting_countdown_title">Таймер зворотного відліку</string>
+    <string name="setting_countdown_sub">Затримка перед початком захоплення екрана</string>
+    <string name="dialog_select_countdown">Оберіть час відліку</string>
+    <string name="countdown_off">Вимкнено</string>
+    <string name="setting_shake_stop_title">Струшування для зупинки</string>
+    <string name="setting_shake_stop_sub">Енергійно струсіть телефон, щоб завершити запис</string>
+    <string name="setting_screen_off_stop_title">Зупинка при вимкненні екрана</string>
+    <string name="setting_screen_off_stop_sub">Завершувати запис будь-якого типу при вимкненні чи блокуванні екрана</string>
+    <string name="setting_keep_screen_awake_title">Не вимикати екран</string>
+    <string name="setting_keep_screen_awake_sub">Запобігати вимкненню або засинанню екрана під час запису та зворотного відліку</string>
+    <string name="setting_status_bar_pill_title">Плашка в рядку стану</string>
+    <string name="setting_status_bar_pill_sub">Відображати відлік та статус запису в рядку стану та Now Bar на підтримуваних пристроях</string>
+    <string name="notif_countdown_title_fmt">Початок через %1$d с…</string>
+    <string name="notif_countdown_sub">Запис екрана незабаром розпочнеться</string>
+    <string name="notif_action_cancel">Скасувати</string>
+    <string name="toast_notif_permission_fallback">Сповіщення вимкнено. Плаваючі кнопки увімкнено для можливості зупинки запису.</string>
+    <string name="toast_stealth_notif_fallback">Сповіщення вимкнено. Прихований запис активний; зупиніть його через ScreenX або швидкі налаштування.</string>
+    <string name="toast_notif_denied_warning">Дозвіл на сповіщення відхилено. Керування записом та плашка не відображатимуться в рядку стану.</string>
+    <string name="setting_status_bar_pill_perm_warning">Сповіщення вимкнено. Торкніться тут, щоб увімкнути дозвіл у Налаштуваннях.</string>
+    <string name="setting_floating_controls_title">Плаваюча панель</string>
+    <string name="setting_floating_controls_sub">Екранна кнопка швидкого керування</string>
+    <string name="dialog_floating_ball">Плаваюча кнопка керування</string>
+    <string name="floating_hide_always">Приховувати завжди</string>
+    <string name="floating_while_recording">Тільки під час запису</string>
+    <string name="floating_always">Постійно (швидкий доступ)</string>
+    <string name="floating_status_hidden">Прихована</string>
+    <string name="floating_status_always">Завжди активна</string>
+    <string name="floating_status_recording">Під час запису</string>
+    <string name="setting_hide_ball_rec_title">Ховати кнопку під час запису</string>
+    <string name="setting_hide_ball_rec_sub">Автоматично приховувати плаваючу кнопку, поки триває запис</string>
+    <string name="toast_overlay_permission_ball">Потрібен дозвіл для відображення плаваючої кнопки</string>
+    <string name="toast_allow_overlay">Надайте дозвіл \'Поверх інших додатків\', щоб бачити плаваючу кнопку</string>
+    <string name="setting_qs_tile_title">Плитка швидких налаштувань</string>
+    <string name="setting_qs_tile_sub">Додати плитку ScreenX до панелі швидких налаштувань</string>
+    <string name="qs_tile_add_btn">Додати</string>
+    <string name="toast_tile_added">Плитку ScreenX додано до швидких налаштувань!</string>
+    <string name="toast_tile_manual_guide">Опустіть шторку сповіщень двічі, торкніться олівця та перетягніть ScreenX до активних плиток.</string>
+
+    <!-- Appearance & Theme Settings -->
+    <string name="setting_theme_mode_title">Тема оформлення</string>
+    <string name="setting_theme_mode_sub">Темна, світла або системна</string>
+    <string name="dialog_select_theme">Оберіть тему застосунку</string>
+    <string name="theme_light">Світла тема</string>
+    <string name="theme_dark">Темна тема</string>
+    <string name="theme_system">Системна тема</string>
+    <string name="theme_dynamic">Динамічні шпалери</string>
+
+    <!-- Stealth Recording Settings -->
+    <string name="setting_stealth_rec_title">Прихований запис</string>
+    <string name="setting_stealth_rec_sub">Непомітний фоновий запис для захищених додатків</string>
+    <string name="setting_wireless_adb_title">Бездротове сполучення ADB</string>
+    <string name="setting_wireless_adb_sub_paired">Пристрій сполучено та готово до прихованого запису</string>
+    <string name="setting_wireless_adb_sub_unpaired">Сполучіть пристрій через бездротове налагодження</string>
+    <string name="badge_paired">Сполучено</string>
+    <string name="badge_set_up">Налаштувати</string>
+    <string name="setting_default_engine_title">Основний рушій запису</string>
+    <string name="setting_default_engine_sub">Рушій, який запускається головною кнопкою</string>
+    <string name="dialog_default_recording_mode">Режим запису за замовчуванням</string>
+    <string name="mode_mediaprojection">MediaProjection (Стандартний)</string>
+    <string name="mode_stealth">Тільки прихований</string>
+    <string name="mode_ask">Запитувати щоразу</string>
+    <string name="mode_display_stealth">Прихований</string>
+    <string name="mode_display_prompt">Запит</string>
+    <string name="mode_display_standard">Стандартний</string>
+    <string name="setting_swap_cards_title">Змінити картки на головній</string>
+    <string name="setting_swap_cards_sub">Зробити прихований запис головною карткою, а стандартний — додатковою</string>
+    <string name="setting_stealth_rules_title">Правила та обмеження прихованого режиму</string>
+    <string name="setting_stealth_rules_sub">Натисніть для перегляду обмежень прихованого запису</string>
+    <string name="badge_stealth">Прихований</string>
+
+    <!-- About Settings -->
+    <string name="setting_about_app_title">ScreenX Recorder</string>
+    <string name="setting_about_app_sub_fmt">Версія %1$s • Професійний запис екрана</string>
+    <string name="setting_check_updates_title">Перевірити оновлення</string>
+    <string name="setting_check_updates_sub_idle">Перевірити релізи на GitHub</string>
+    <string name="setting_check_updates_sub_checking">З\'єднання з GitHub...</string>
+    <string name="status_checking">Перевірка...</string>
+    <string name="toast_update_latest_fmt">У вас найновіша версія! ScreenX v%1$s є актуальною.</string>
+    <string name="toast_update_error_fmt">Не вдалося перевірити оновлення: %1$s</string>
+    <string name="setting_auto_check_updates_title">Автоперевірка оновлень</string>
+    <string name="setting_auto_check_updates_sub">Автоматично шукати нові версії на GitHub під час запуску</string>
+    <string name="setting_refresh_rate_title">Частота оновлення екрана</string>
+    <string name="setting_refresh_rate_sub_fmt">Дисплей підтримує до %1$d Гц</string>
+
+    <!-- ADB Pairing Dialog -->
+    <string name="adb_pairing_dialog_title">Бездротове сполучення ADB</string>
+    <string name="adb_pairing_step_header">Інструкція зі сполучення:</string>
+    <string name="adb_pairing_step1">1. Відкрийте Налаштування &gt; Система &gt; Для розробників &gt; Бездротове налагодження.</string>
+    <string name="adb_pairing_step2">2. Торкніться \'Підключити пристрій за допомогою коду підключення\'.</string>
+    <string name="adb_pairing_step3">3. Введіть 6-значний код та номер порту, вказаний на тому екрані, нижче.</string>
+    <string name="adb_pairing_port_label">Порт сполучення</string>
+    <string name="adb_pairing_code_label">6-значний код сполучення</string>
+    <string name="adb_pairing_btn">Сполучити пристрій</string>
+    <string name="adb_pairing_status_pairing">Сполучення...</string>
+    <string name="adb_pairing_success">Успішно сполучено!</string>
+    <string name="adb_pairing_failed_fmt">Помилка сполучення: %1$s</string>
+    <string name="adb_pairing_missing_fields">Введіть як порт, так і 6-значний код сполучення.</string>
+    <string name="adb_pairing_already_paired">Бездротовий ADB сполучено та готово до роботи.</string>
+    <string name="adb_unpair_btn">Розірвати сполучення</string>
+
+    <!-- ADB Limitations Dialog -->
+    <string name="adb_rules_title">Правила та обмеження прихованого запису</string>
+    <string name="adb_rules_subtitle">Важливі рекомендації для непомітного захоплення</string>
+    <string name="adb_rules_audio_title">Відсутність запису звуку</string>
+    <string name="adb_rules_audio_desc">Вбудована системна утиліта screenrecord в Android не захоплює аудіо. Прихований запис здійснюється лише для відео.</string>
+    <string name="adb_rules_orientation_title">Фіксована орієнтація</string>
+    <string name="adb_rules_orientation_desc">Зміна орієнтації під час запису не підтримується через ADB. Записуйте в початковому положенні.</string>
+    <string name="adb_rules_reboot_title">Скидання після перезавантаження</string>
+    <string name="adb_rules_reboot_desc">Порти бездротового налагодження змінюються після перезапуску телефона. Потрібно буде сполучити знову.</string>
+    <string name="adb_rules_wifi_title">Потрібне підключення до Wi-Fi</string>
+    <string name="adb_rules_wifi_desc">Бездротове налагодження вимагає активного з\'єднання Wi-Fi на пристрої.</string>
+    <string name="adb_rules_understand">Зрозуміло</string>
+    <string name="adb_rules_enable_btn">Увімкнути прихований запис</string>
+
+    <!-- Home Screen -->
+    <string name="home_ready_to_record">Готовий до запису</string>
+    <string name="home_recording_screen">Запис екрана...</string>
+    <string name="home_ready_for_stealth">Готовий до прихованого</string>
+    <string name="home_stealth_recording">Прихований запис...</string>
+    <string name="home_record_btn">Запис</string>
+    <string name="home_recording_btn">Запис</string>
+    <string name="home_tap_to_start">Торкніться для старту</string>
+    <string name="home_tap_to_stop">Торкніться для зупинки</string>
+    <string name="home_rec_badge">REC</string>
+    <string name="home_stealth_title">Прихований запис</string>
+    <string name="home_stealth_sub">Непомітний запис для захищених додатків</string>
+    <string name="home_standard_title">Стандартний запис</string>
+    <string name="home_standard_sub">Захоплення через MediaProjection</string>
+    <string name="home_start_stealth">Почати прихований</string>
+    <string name="home_stop_stealth">Зупинити прихований</string>
+    <string name="home_pair_adb">Сполучити ADB</string>
+    <string name="home_unpaired">Не сполучено</string>
+    <string name="home_take_screenshot">Скриншот</string>
+    <string name="home_trim_video">Редактор</string>
+    <string name="home_recent_recordings">Нещодавні записи</string>
+    <string name="home_view_all">Усі записи</string>
+    <string name="home_no_recordings">Записів ще немає</string>
+    <string name="home_no_recordings_sub">Ваші відеозаписи та скриншоти з\'являться тут</string>
+    <string name="home_storage_info_fmt">%1$s ГБ вільно • %2$d%% Зайнято</string>
+    <string name="home_toast_finalizing">Збереження запису, зачекайте будь ласка...</string>
+    <string name="home_toast_refreshed_fmt">Медіатеку оновлено (%1$d елементів)</string>
+    <string name="home_toast_stealth_not_paired">Прихований запис не сполучено. Спочатку виконайте налаштування.</string>
+    <string name="home_toast_stealth_error_fmt">Не вдалося запустити прихований запис: %1$s</string>
+
+    <!-- Gallery / Library Screen -->
+    <string name="library_title">Медіатека</string>
+    <string name="library_all">Усі</string>
+    <string name="library_videos">Відео</string>
+    <string name="library_screenshots">Скриншоти</string>
+    <string name="library_no_items">Записів поки немає</string>
+    <string name="library_no_items_sub">Зробіть перший запис екрана, щоб переглянути його тут</string>
+    <string name="library_delete_dialog_title">Видалити запис</string>
+    <string name="library_delete_dialog_msg">Ви впевнені, що хочете назавжди видалити цей файл?</string>
+    <string name="library_rename_dialog_title">Перейменувати файл</string>
+    <string name="library_rename_label">Нове ім\'я файлу</string>
+    <string name="library_rename_success">Успішно перейменовано</string>
+    <string name="library_rename_failed">Не вдалося перейменувати файл</string>
+    <string name="library_deleted_success">Запис видалено</string>
+
+    <!-- Video Trimmer Screen -->
+    <string name="trimmer_title">Відеоредактор</string>
+    <string name="trimmer_mode_trim">Обрізати відео</string>
+    <string name="trimmer_mode_delete">Видалити фрагмент</string>
+    <string name="trimmer_mode_split">Розділити відео</string>
+    <string name="trimmer_no_video">Оберіть відео для редагування</string>
+    <string name="trimmer_no_video_sub">Виберіть записане відео з медіатеки для обрізки, вирізання фрагментів або поділу на частини.</string>
+    <string name="trimmer_open_file">Відкрити відеофайл</string>
+    <string name="trimmer_save_changes">Зберегти</string>
+    <string name="trimmer_export">Експортувати відео</string>
+    <string name="trimmer_play">Відтворити</string>
+    <string name="trimmer_pause">Пауза</string>
+    <string name="trimmer_reset">Скинути</string>
+    <string name="trimmer_start_time">Початок: %1$s</string>
+    <string name="trimmer_end_time">Кінець: %1$s</string>
+    <string name="trimmer_duration">Тривалість: %1$s</string>
+    <string name="trimmer_toast_min_duration">Виділений фрагмент має бути не менше 0.5 секунди</string>
+    <string name="trimmer_toast_trim_saved">Обрізане відео збережено!</string>
+    <string name="trimmer_toast_trim_failed_fmt">Помилка обрізки: %1$s</string>
+    <string name="trimmer_toast_delete_min">Фрагмент для видалення має бути не менше 0.5 секунди</string>
+    <string name="trimmer_toast_delete_saved">Фрагмент видалено та збережено!</string>
+    <string name="trimmer_toast_delete_failed_fmt">Помилка видалення: %1$s</string>
+    <string name="trimmer_toast_split_start_min">Точка розділення має бути щонайменше на 0.5с від початку</string>
+    <string name="trimmer_toast_split_end_min">Точка розділення має бути щонайменше на 0.5с від кінця</string>
+    <string name="trimmer_toast_split_saved">Розділено на Частину 1 та Частину 2 — збережено!</string>
+    <string name="trimmer_toast_split_failed_fmt">Помилка розділення: %1$s</string>
+    <string name="trimmer_toast_split_at_fmt">Відео розділено на %1$s</string>
+    <string name="trimmer_toast_split_boundary">Неможливо розділити занадто близько до меж фрагмента</string>
+    <string name="trimmer_toast_select_segment">Будь ласка, спочатку оберіть фрагмент</string>
+    <string name="trimmer_toast_all_deleted">Неможливо зберегти, коли всі фрагменти видалено</string>
+    <string name="trimmer_toast_edited_saved">Відео відредаговано та успішно збережено!</string>
+    <string name="trimmer_toast_export_failed_fmt">Помилка експорту: %1$s</string>
+
+    <!-- Update Dialog -->
+    <string name="update_dialog_title">Оновлення ScreenX</string>
+    <string name="update_dialog_current_fmt">Поточна: v%1$s • Реліз на GitHub</string>
+    <string name="update_dialog_download_btn">Завантажити оновлення ScreenX (APK)</string>
+    <string name="update_dialog_github_btn">Переглянути на GitHub</string>
+    <string name="update_dialog_later_btn">Пізніше</string>
+
+    <!-- Notifications & Services -->
+    <string name="notif_title_recorder">ScreenX Recorder</string>
+    <string name="notif_status_recording">Запис екрана...</string>
+    <string name="notif_status_paused">Запис призупинено</string>
+    <string name="notif_status_floating">Плаваюча кнопка активна • Торкніться, щоб відкрити</string>
+    <string name="notif_action_pause">Пауза</string>
+    <string name="notif_action_resume">Продовжити</string>
+    <string name="notif_action_stop">Зупинити</string>
+    <string name="notif_action_exit">Вийти</string>
+    <string name="notif_action_hide_ball">Сховати кнопку</string>
+    <string name="notif_title_stealth">ScreenX — Прихований запис</string>
+    <string name="notif_status_stealth">Триває прихований запис</string>
+    <string name="notif_channel_name">Служба запису екрана</string>
+    <string name="notif_channel_desc">Показує поточне сповіщення запису екрана з елементами керування</string>
+    <string name="toast_permission_denied">У дозволі на захоплення екрана відмовлено</string>
+    <string name="toast_overlay_required">Для плаваючих кнопок потрібен дозвіл на відображення поверх інших додатків</string>
+    <string name="toast_video_deleted">Відео успішно видалено</string>
+
+    <!-- Additional Screen Strings -->
+    <string name="discard_changes_title">Відхилити зміни?</string>
+    <string name="discard_changes_msg">У вас є незбережені зміни. Ви впевнені, що хочете відхилити їх і вийти?</string>
+    <string name="discard">Відхилити</string>
+    <string name="split_here">Розділити тут</string>
+    <string name="restore_part">Відновити частину</string>
+    <string name="delete_part">Видалити частину</string>
+    <string name="keep_app_open">Будь ласка, тримайте ScreenX відкритим</string>
+    <string name="choose_from_device">Вибрати з пристрою</string>
+    <string name="browse_internal_storage">Огляд файлів внутрішньої пам\'яті</string>
+    <string name="recent_captures">Останні записи</string>
+    <string name="no_recordings_available">Немає доступних записів</string>
+    <string name="start_pairing_helper">Запустити помічник з\'єднання</string>
+    <string name="open_developer_settings">Відкрити параметри розробника</string>
+    <string name="listening_pairing_dialog">Очікування діалогу з\'єднання…</string>
+    <string name="tap_pair_device_code">Натисніть \'З\'єднати пристрій за допомогою коду\' у Бездротовому налагодженні</string>
+    <string name="pairing_complete">З\'єднання завершено</string>
+    <string name="device_paired_stealth">Пристрій з\'єднано і готовий до невидимого запису.</string>
+    <string name="available_space">Вільне місце</string>
+    <string name="auto_rotate">Автоповорот</string>
+    <string name="fps_video_fmt">%1$d кадр/с Відео</string>
+    <string name="finalizing_recording">Завершення та збереження запису...</string>
+    <string name="merging_audio_gallery">Об\'єднання звуку та додавання до галереї</string>
+    <string name="no_recordings_tap_refresh">Немає видимих записів. Торкніться для оновлення</string>
+    <string name="stealth_rules_bypass">Обходить виявлення запису в Snapchat, Instagram та банківських додатках без сповіщень.</string>
+    <string name="stealth_rule_3min">Обмеження сеансу 3 хвилини</string>
+    <string name="stealth_rule_3min_desc">Android обмежує сеанси screenrecord до 3 хвилин. ScreenX автоматично перезапускається сегментами.</string>
+    <string name="stealth_rule_wireless">Одноразове бездротове з\'єднання</string>
+    <string name="stealth_rule_wireless_desc">Потребує з\'єднання через бездротове налагодження один раз на Android 11+.</string>
+    <string name="got_it">Зрозуміло</string>
+    <string name="enable">Увімкнути</string>
+    <string name="edit_video">Редагувати відео</string>
+    <string name="save_video">Зберегти відео</string>
+    <string name="quick_tools">Швидкі інструменти</string>
+
+    <string name="adb_pairing_dialog_stealth_setup">Налаштування прихованого запису</string>
+    <string name="adb_status_connected_ready">Стан: Підключено та готово</string>
+    <string name="adb_status_paired_needs_connect">Стан: Спарено (потрібне підключення)</string>
+    <string name="adb_status_onetime_pairing">Одноразове бездротове підключення</string>
+    <string name="adb_tab_quick_notification">Швидке сповіщення</string>
+    <string name="adb_tab_manual_port">Ручний ввід / Порт</string>
+    <string name="adb_pair_notification_hint">Легко підключайтеся за допомогою відповіді на сповіщення Android:</string>
+    <string name="adb_step1_launch_title">Запустити бездротове налагодження</string>
+    <string name="adb_step1_launch_desc">Торкніться \'Запустити помічник\' нижче. ScreenX відкриє параметри розробника.</string>
+    <string name="adb_step2_pair_code_title">Торкніться \'З\'єднати пристрій за допомогою коду\'</string>
+    <string name="adb_step2_pair_code_desc">Увімкніть бездротове налагодження та відкрийте 6-значний код.</string>
+    <string name="adb_step3_reply_title">Відповісти в сповіщенні ScreenX</string>
+    <string name="adb_step3_reply_desc">Потягніть панель сповіщень, натисніть Відповісти, введіть 6-значний код і надішліть.</string>
+    <string name="stop">Зупинити</string>
+    <string name="adb_manual_step1_title">Крок 1: Підключити до пристрою</string>
+    <string name="adb_manual_step1_desc">У бездротовому налагодженні → \'З\'єднати за допомогою коду\':\n(Порада: тримайте діалог відкритим у розділеному екрані)</string>
+    <string name="adb_device_ip_label">IP-адреса пристрою</string>
+    <string name="adb_manual_step2_title">Крок 2: Підключитися до порту</string>
+    <string name="adb_manual_step2_desc">Головний порт у бездротовому налагодженні (напр. 41927) або залиште пустим для авто:</string>
+    <string name="adb_connect_port_label">Порт підключення (необов\'язково)</string>
+    <string name="adb_connect_btn">Підключити</string>
+    <string name="adb_err_invalid_port">Введіть дійсний 5-значний порт спарювання</string>
+    <string name="adb_err_invalid_code">Введіть 6-значний код спарювання</string>
+    <string name="adb_success_paired_now_connect">Спарювання успішне! Тепер підключіться нижче.</string>
+    <string name="adb_success_connected">Підключено! Прихований запис готовий.</string>
+    <string name="adb_err_connect_failed">Помилка підключення</string>
+    <string name="stealth_enable_title">Увімкнути прихований запис</string>
+    <string name="stealth_review_desc">Перегляньте важливі деталі перед увімкненням</string>
+    <string name="stealth_features_limitations">Можливості та обмеження</string>
+    <string name="fully_undetectable">Повністю непомітно</string>
+    <string name="keep_editing">Продовжити редагування</string>
+    <string name="trimmer_hint_timeline">Торкніться шкали часу, щоб вибрати фрагменти, потім розділіть або видаліть/відновіть</string>
+    <string name="trimmer_sel_start">Вибраний початок</string>
+    <string name="trimmer_sel_duration">Вибрана тривалість</string>
+    <string name="trimmer_sel_end">Вибраний кінець</string>
+    <string name="trimmer_start">Початок</string>
+    <string name="trimmer_end">Кінець</string>
+    <string name="trimmer_duration_label">Тривалість</string>
+    <string name="trimmer_deleted_tag">ВИДАЛЕНО</string>
+
+    <!-- Services, Tiles & Toasts -->
+    <string name="toast_recording_stopped">Запис зупинено</string>
+    <string name="toast_recording_started">Запис розпочато</string>
+    <string name="toast_screenshot_saved">Знімок екрана збережено в Pictures/ScreenX</string>
+    <string name="toast_stealth_start_failed">Не вдалося запустити прихований запис: %1$s</string>
+    <string name="toast_stealth_connect_failed">Не вдалося підключитися до бездротового ADB. Переконайтеся, що бездротове налагодження ввімкнено.</string>
+    <string name="toast_stealth_no_video">Прихований запис завершився без збереження відео</string>
+    <string name="toast_stealth_error_fmt">Помилка прихованого запису: %1$s</string>
+    <string name="toast_browser_error">Не вдалося відкрити браузер: %1$s</string>
+    <string name="tile_stop_stealth">Зупинити прихований запис</string>
+    <string name="tile_stop_recording">Зупинити запис</string>
+    <string name="tile_stealth_recording">Прихований запис…</string>
+    <string name="adb_pairing_notif_waiting_title">ScreenX: Очікування діалогу з\'єднання</string>
+    <string name="adb_pairing_notif_waiting_sub">У параметрах розробника торкніться \'З\'єднати пристрій за допомогою коду\'</string>
+    <string name="adb_pairing_notif_ready_title">ScreenX: Введіть код з\'єднання</string>
+    <string name="adb_pairing_notif_ready_sub_fmt">Знайдено порт %1$d. Торкніться Відповісти та введіть 6-значний код з екрана.</string>
+    <string name="adb_pairing_notif_pairing_title">ScreenX: З\'єднання з пристроєм…</string>
+    <string name="adb_pairing_notif_pairing_sub">Автентифікація через службу бездротового налагодження…</string>
+    <string name="adb_pairing_notif_failed_title">ScreenX: Помилка з\'єднання</string>
+    <string name="adb_pairing_notif_failed_sub">З\'єднання не вдалося. Торкніться Повторити з новим кодом.</string>
+    <string name="reply">Відповісти</string>
+    <string name="retry">Повторити</string>
+    <string name="adb_port_auto_placeholder">напр. 41927 або пусто для авто</string>
+    <string name="toast_shake_detected">Виявлено струшування! Зупинка…</string>
+    <string name="toast_storage_critically_low_fmt">Критично мало місця (%1$d МБ вільно)! Потрібно щонайменше %2$d МБ для безпечного запису.</string>
+    <string name="toast_storage_almost_full_fmt">Пам\'ять майже заповнена (залишилося %1$d МБ)! Запис автоматично зупинено та збережено.</string>
+    <string name="toast_storage_safeguard_reason">Захист від заповнення пам\'яті: Запис безпечно збережено!</string>
+    <string name="toast_record_start_failed_fmt">Не вдалося розпочати запис: %1$s</string>
+    <string name="toast_mic_not_active">Мікрофон не активний у цьому режимі запису</string>
+    <string name="toast_mic_muted">Мікрофон вимкнено</string>
+    <string name="toast_mic_unmuted">Мікрофон увімкнено</string>
+    <string name="toast_stealth_not_ready">Підключення прихованого запису не готове. Будь ласка, повторіть сполучення в Налаштуваннях.</string>
+    <string name="adb_pairing_notif_success_title">ScreenX Прихований успішно сполучено!</string>
+    <string name="adb_pairing_notif_success_sub">Натисніть, щоб відкрити ScreenX. Прихований запис готовий до роботи.</string>
+    <string name="adb_pairing_notif_success_toast">ScreenX успішно сполучено!</string>
+    <string name="adb_pairing_code_label_short">6-значний код</string>
+    <string name="toast_mic_init_failed">Не вдалося ініціалізувати мікрофон — перевірте дозволи додатка.</string>
+    <string name="toast_mic_unavailable_internal_only">Мікрофон недоступний. Записується лише внутрішній звук.</string>
+    <string name="toast_internal_audio_android10">Запис внутрішнього аудіо вимагає Android 10 або новішої версії.</string>
+    <string name="adb_pairing_port_placeholder">напр. 33625</string>
+
+    <!-- Diagnostics & Logs Export -->
+    <string name="section_diagnostics">ДІАГНОСТИКА ТА ЛОГИ</string>
+    <string name="setting_export_logs_title">Експорт діагностичних логів (log.txt)</string>
+    <string name="setting_export_logs_sub">Створити та надіслати log.txt для виявлення проблем орієнтації</string>
+    <string name="toast_exporting_logs">Формування діагностичного log.txt…</string>
+    <string name="toast_logs_ready">Діагностичний лог готовий до відправки</string>
+    <string name="toast_logs_failed">Не вдалося експортувати логи: %1$s</string>
+
+    <!-- ADB Continuous Recording & Auto-Merge -->
+    <string name="setting_adb_auto_merge_title">Автопродовження після 3 хв та об\'єднання</string>
+    <string name="setting_adb_auto_merge_sub">Оминає ліміт Android у 3 хвилини. Безшовно запускає наступний сегмент та об\'єднує всі частини в одне відео.</string>
+    <string name="setting_adb_record_speaker_title">Запис звуку з динаміків</string>
+    <string name="setting_adb_record_speaker_sub">Записує звук ігор та додатків із динаміків пристрою з шумозаглушенням і підсиленням гучності. Без жодних діалогових вікон.</string>
+    <string name="toast_adb_merging">ScreenX об\'єднує записи в один файл...</string>
+    <string name="toast_adb_merged_success">Записи успішно об\'єднано та збережено</string>
+    <string name="toast_adb_merge_fallback">Помилка об\'єднання; окремі частини збережено</string>
+    <string name="notif_saving_progress">Завершення та збереження відео до галереї…</string>
+    <string name="notif_merging_progress_fmt">Об\'єднання %1$d частин запису в одне відео…</string>
+</resources>

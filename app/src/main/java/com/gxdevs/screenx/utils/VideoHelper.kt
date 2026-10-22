@@ -125,12 +125,15 @@ object VideoHelper {
                 while (cursor.moveToNext()) {
                     val id       = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID))
                     val name     = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)) ?: continue
-                    // DATA can be null on Android 10+ with scoped storage
-                    val path     = cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.DATA))
+                    // BUG-14 FIX: DATA and RESOLUTION columns are optional — getColumnIndex returns -1
+                    // if absent, and getString(-1) throws IllegalArgumentException on some devices.
+                    val dataIdx  = cursor.getColumnIndex(MediaStore.Video.Media.DATA)
+                    val path     = if (dataIdx >= 0) cursor.getString(dataIdx) else null
                     val size     = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE))
                     val duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION))
                     val dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED))
-                    val resolution = cursor.getString(cursor.getColumnIndex(MediaStore.Video.Media.RESOLUTION)) ?: "Unknown"
+                    val resIdx   = cursor.getColumnIndex(MediaStore.Video.Media.RESOLUTION)
+                    val resolution = if (resIdx >= 0) cursor.getString(resIdx) ?: "Unknown" else "Unknown"
 
                     val contentUri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
 
@@ -189,7 +192,9 @@ object VideoHelper {
                 while (cursor.moveToNext()) {
                     val id        = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
                     val name      = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)) ?: continue
-                    val path      = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
+                    // BUG-14 FIX: Safe DATA column access
+                    val dataIdx   = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+                    val path      = if (dataIdx >= 0) cursor.getString(dataIdx) else null
                     val size      = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE))
                     val dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED))
 

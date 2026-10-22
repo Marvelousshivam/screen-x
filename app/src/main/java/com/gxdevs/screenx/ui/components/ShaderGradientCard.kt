@@ -36,6 +36,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import com.gxdevs.screenx.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -567,7 +569,7 @@ fun MainRecordShaderCard(
                     ) {
                         Icon(
                             imageVector = icon ?: Lucide.CircleDot,
-                            contentDescription = if (isRecordingActive) "Stop Recording" else "Start Recording",
+                            contentDescription = if (isRecordingActive) stringResource(R.string.home_tap_to_stop) else stringResource(R.string.home_tap_to_start),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -592,7 +594,7 @@ fun MainRecordShaderCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = badgeText ?: "REC",
+                                text = badgeText ?: stringResource(R.string.home_rec_badge),
                                 color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Black,
@@ -606,7 +608,7 @@ fun MainRecordShaderCard(
             // Bottom Typography (Crisp Pure White with subtle shadow for 100% legibility on Gunmetal/Black)
             Column {
                 Text(
-                    text = titleText ?: (if (isRecordingActive) "Recording" else "Record"),
+                    text = titleText ?: (if (isRecordingActive) stringResource(R.string.home_recording_btn) else stringResource(R.string.home_record_btn)),
                     color = Color.White,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
@@ -622,7 +624,7 @@ fun MainRecordShaderCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = subtitleText ?: (if (isRecordingActive) "Tap to stop capture" else "Tap to start capture"),
+                    text = subtitleText ?: (if (isRecordingActive) stringResource(R.string.home_tap_to_stop) else stringResource(R.string.home_tap_to_start)),
                     color = Color.White.copy(alpha = 0.90f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,

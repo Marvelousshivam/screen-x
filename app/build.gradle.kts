@@ -36,8 +36,8 @@ configure<ApplicationExtension> {
         applicationId = "com.gxdevs.screenx"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.4.0"
+        versionCode = 13
+        versionName = "1.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

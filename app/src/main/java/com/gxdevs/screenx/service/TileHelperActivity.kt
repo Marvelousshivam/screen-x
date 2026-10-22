@@ -19,12 +19,20 @@ import com.gxdevs.screenx.data.SettingsManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
+import com.gxdevs.screenx.R
+import com.gxdevs.screenx.utils.LocaleHelper
 
 /**
  * Transparent helper activity launched from the Quick Settings tile
  * to request screen recording and overlay permissions without showing the main app UI.
  */
 class TileHelperActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val langCode = SettingsManager.getLanguageSync(newBase)
+        val localizedContext = LocaleHelper.applyLocale(newBase, langCode)
+        super.attachBaseContext(localizedContext)
+    }
 
     private lateinit var settingsManager: SettingsManager
     private lateinit var projectionManager: MediaProjectionManager
@@ -35,7 +43,7 @@ class TileHelperActivity : ComponentActivity() {
         if (Settings.canDrawOverlays(this)) {
             checkPermissionsAndStartProjection()
         } else {
-            Toast.makeText(this, "Overlay permission required", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_overlay_required), Toast.LENGTH_SHORT).show()
             finish()
         }
     }
@@ -52,10 +60,17 @@ class TileHelperActivity : ComponentActivity() {
             permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: true
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notifGranted = permissions[Manifest.permission.POST_NOTIFICATIONS]
+            if (notifGranted == false) {
+                Toast.makeText(this, getString(R.string.toast_notif_denied_warning), Toast.LENGTH_LONG).show()
+            }
+        }
+
         if (recordAudioGranted && storageGranted) {
             startScreenCaptureIntent()
         } else {
-            Toast.makeText(this, "Required permissions denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
             finish()
         }
     }
@@ -66,8 +81,15 @@ class TileHelperActivity : ComponentActivity() {
         if (result.resultCode == RESULT_OK && result.data != null) {
             startRecordingService(result.resultCode, result.data!!)
         } else {
-            Toast.makeText(this, "Screen capture permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
         }
+        finish()
+    }
+
+    private val adbMicPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        startAdbServiceFromTile()
         finish()
     }
 
@@ -102,7 +124,7 @@ class TileHelperActivity : ComponentActivity() {
                 if (!isAdbPaired) {
                     Toast.makeText(
                         this@TileHelperActivity,
-                        "Wireless ADB is not paired. Please open ScreenX to pair.",
+                        getString(R.string.home_toast_stealth_not_paired),
                         Toast.LENGTH_LONG
                     ).show()
                     val appIntent = Intent(this@TileHelperActivity, com.gxdevs.screenx.MainActivity::class.java).apply {
@@ -112,25 +134,19 @@ class TileHelperActivity : ComponentActivity() {
                     finish()
                     return@launch
                 }
-                val startIntent = Intent(this@TileHelperActivity, AdbRecordService::class.java).apply {
-                    action = AdbRecordService.ACTION_START_ADB
+                val isRecordAudio = settingsManager.adbRecordAudioFlow.first()
+                if (isRecordAudio && ContextCompat.checkSelfPermission(this@TileHelperActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    adbMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    return@launch
                 }
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(startIntent)
-                    } else {
-                        startService(startIntent)
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("TileHelperActivity", "Failed to start AdbRecordService", e)
-                }
+                startAdbServiceFromTile()
                 finish()
                 return@launch
             }
 
             val showFloating = settingsManager.showFloatingFlow.first()
             if (showFloating && !Settings.canDrawOverlays(this@TileHelperActivity)) {
-                Toast.makeText(this@TileHelperActivity, "Please enable 'Display over other apps'", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@TileHelperActivity, getString(R.string.toast_allow_overlay), Toast.LENGTH_LONG).show()
                 val intent = Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     "package:$packageName".toUri()
@@ -187,12 +203,47 @@ class TileHelperActivity : ComponentActivity() {
         captureLauncher.launch(captureIntent)
     }
 
+    private fun isCurrentUiLandscape(): Boolean {
+        val rot = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display?.rotation ?: android.view.Surface.ROTATION_0
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.rotation
+        }
+        val isRotLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
+        val isConfigLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val isMetricsLandscape = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val bounds = windowManager.currentWindowMetrics.bounds
+                bounds.width() > bounds.height()
+            } catch (_: Exception) { false }
+        } else false
+        return isRotLandscape || isConfigLandscape || isMetricsLandscape
+    }
+
     private fun startRecordingService(resultCode: Int, resultData: Intent) {
         val serviceIntent = Intent(this, ScreenRecordService::class.java).apply {
             action = ScreenRecordService.ACTION_START
             putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
             putExtra(ScreenRecordService.EXTRA_RESULT_DATA, resultData)
+            putExtra(ScreenRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
         }
-        startForegroundService(serviceIntent)
+        androidx.core.content.ContextCompat.startForegroundService(this, serviceIntent)
+    }
+
+    private fun startAdbServiceFromTile() {
+        val startIntent = Intent(this@TileHelperActivity, AdbRecordService::class.java).apply {
+            action = AdbRecordService.ACTION_START_ADB
+            putExtra(AdbRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(startIntent)
+            } else {
+                startService(startIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TileHelperActivity", "Failed to start AdbRecordService", e)
+        }
     }
 }

@@ -9,17 +9,22 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.gxdevs.screenx.R
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ArrowLeft
 import com.composables.icons.lucide.Camera
@@ -99,7 +104,7 @@ fun GalleryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Library",
+                        stringResource(R.string.library_title),
                         fontWeight = FontWeight.Bold,
                         letterSpacing = (-0.5).sp
                     )
@@ -108,7 +113,7 @@ fun GalleryScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Lucide.ArrowLeft,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },
@@ -116,11 +121,11 @@ fun GalleryScreen(
                     IconButton(onClick = {
                         isRefreshing = true
                         onRefresh()
-                        android.widget.Toast.makeText(context, "Library refreshed (${videos.size} items)", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, context.getString(R.string.home_toast_refreshed_fmt, videos.size), android.widget.Toast.LENGTH_SHORT).show()
                     }) {
                         Icon(
                             imageVector = Lucide.RotateCcw,
-                            contentDescription = "Refresh",
+                            contentDescription = stringResource(R.string.refresh),
                             modifier = Modifier.graphicsLayer { rotationZ = rotation }
                         )
                     }
@@ -131,7 +136,7 @@ fun GalleryScreen(
                     }) {
                         Icon(
                             imageVector = if (isGridView) Lucide.LucideListIcon else Lucide.LayoutGrid,
-                            contentDescription = "Toggle Layout"
+                            contentDescription = null
                         )
                     }
                 },
@@ -153,19 +158,20 @@ fun GalleryScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
                     selected = selectedCategory == 0,
                     onClick = { selectedCategory = 0 },
-                    label = { Text("All (${videos.size})", fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
+                    label = { Text("${stringResource(R.string.library_all)} (${videos.size})", fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
                     shape = RoundedCornerShape(12.dp)
                 )
                 FilterChip(
                     selected = selectedCategory == 1,
                     onClick = { selectedCategory = 1 },
-                    label = { Text("Videos ($videoCount)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
+                    label = { Text("${stringResource(R.string.library_videos)} ($videoCount)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
                     leadingIcon = {
                         Icon(Lucide.Film, contentDescription = null, modifier = Modifier.size(14.dp))
                     },
@@ -174,7 +180,7 @@ fun GalleryScreen(
                 FilterChip(
                     selected = selectedCategory == 2,
                     onClick = { selectedCategory = 2 },
-                    label = { Text("Screenshots ($screenshotCount)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
+                    label = { Text("${stringResource(R.string.library_screenshots)} ($screenshotCount)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold) },
                     leadingIcon = {
                         Icon(Lucide.Camera, contentDescription = null, modifier = Modifier.size(14.dp))
                     },
@@ -201,11 +207,7 @@ fun GalleryScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = when (selectedCategory) {
-                                1 -> "No recorded videos yet"
-                                2 -> "No screenshots captured yet"
-                                else -> "No recordings or screenshots yet"
-                            },
+                            text = stringResource(R.string.library_no_items),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
@@ -214,7 +216,7 @@ fun GalleryScreen(
                 } else {
                     if (isGridView) {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
+                            columns = GridCells.Adaptive(minSize = 160.dp),
                             contentPadding = PaddingValues(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -237,25 +239,32 @@ fun GalleryScreen(
                             }
                         }
                     } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxSize()
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.TopCenter
                         ) {
-                            items(filteredList, key = { it.id }) { item ->
-                                GalleryListItem(
-                                    item = item,
-                                    onClick = {
-                                        if (item.isVideo) {
-                                            selectedVideoForPlayback = item
-                                        } else {
-                                            selectedScreenshotForViewer = item
-                                        }
-                                    },
-                                    onDelete = { mediaToDelete = item },
-                                    onRename = { mediaToRename = item },
-                                    onTrim = { onTrimVideoClick(item) }
-                                )
+                            LazyColumn(
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .widthIn(max = 840.dp)
+                            ) {
+                                items(filteredList, key = { it.id }) { item ->
+                                    GalleryListItem(
+                                        item = item,
+                                        onClick = {
+                                            if (item.isVideo) {
+                                                selectedVideoForPlayback = item
+                                            } else {
+                                                selectedScreenshotForViewer = item
+                                            }
+                                        },
+                                        onDelete = { mediaToDelete = item },
+                                        onRename = { mediaToRename = item },
+                                        onTrim = { onTrimVideoClick(item) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -310,13 +319,13 @@ fun GalleryScreen(
                 val success = VideoHelper.renameMedia(context, item, newName)
                 mediaToRename = null
                 if (success) {
-                    Toast.makeText(context, "Renamed successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.library_rename_success), Toast.LENGTH_SHORT).show()
                     val refreshIntent = Intent("com.gxdevs.screenx.action.RECORDING_SAVED").apply {
                         setPackage(context.packageName)
                     }
                     context.sendBroadcast(refreshIntent)
                 } else {
-                    Toast.makeText(context, "Failed to rename file", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.library_rename_failed), Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -441,7 +450,7 @@ fun GalleryGridItem(
                     ) {
                         Icon(
                             imageVector = Lucide.EllipsisVertical,
-                            contentDescription = "Options",
+                            contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
@@ -453,7 +462,7 @@ fun GalleryGridItem(
                     ) {
                         if (item.isVideo) {
                             DropdownMenuItem(
-                                text = { Text("Play") },
+                                text = { Text(stringResource(R.string.trimmer_play)) },
                                 onClick = {
                                     expandedMenu = false
                                     onClick()
@@ -461,7 +470,7 @@ fun GalleryGridItem(
                                 leadingIcon = { Icon(Lucide.Play, contentDescription = null) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Trim Video") },
+                                text = { Text(stringResource(R.string.trimmer_mode_trim)) },
                                 onClick = {
                                     expandedMenu = false
                                     onTrim()
@@ -470,7 +479,7 @@ fun GalleryGridItem(
                             )
                         } else {
                             DropdownMenuItem(
-                                text = { Text("View") },
+                                text = { Text(stringResource(R.string.home_view_all)) },
                                 onClick = {
                                     expandedMenu = false
                                     onClick()
@@ -479,7 +488,7 @@ fun GalleryGridItem(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Rename") },
+                            text = { Text(stringResource(R.string.rename)) },
                             onClick = {
                                 expandedMenu = false
                                 onRename()
@@ -487,7 +496,7 @@ fun GalleryGridItem(
                             leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Share") },
+                            text = { Text(stringResource(R.string.share)) },
                             onClick = {
                                 expandedMenu = false
                                 VideoHelper.shareVideo(context, item)
@@ -495,7 +504,7 @@ fun GalleryGridItem(
                             leadingIcon = { Icon(Lucide.Share2, contentDescription = null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                             onClick = {
                                 expandedMenu = false
                                 onDelete()
@@ -615,7 +624,7 @@ fun GalleryListItem(
                 IconButton(onClick = { expandedMenu = true }) {
                     Icon(
                         imageVector = Lucide.EllipsisVertical,
-                        contentDescription = "Options",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -625,7 +634,7 @@ fun GalleryListItem(
                 ) {
                     if (item.isVideo) {
                         DropdownMenuItem(
-                            text = { Text("Play") },
+                            text = { Text(stringResource(R.string.trimmer_play)) },
                             onClick = {
                                 expandedMenu = false
                                 onClick()
@@ -633,7 +642,7 @@ fun GalleryListItem(
                             leadingIcon = { Icon(Lucide.Play, contentDescription = null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Trim Video") },
+                            text = { Text(stringResource(R.string.trimmer_mode_trim)) },
                             onClick = {
                                 expandedMenu = false
                                 onTrim()
@@ -642,7 +651,7 @@ fun GalleryListItem(
                         )
                     } else {
                         DropdownMenuItem(
-                            text = { Text("View") },
+                            text = { Text(stringResource(R.string.home_view_all)) },
                             onClick = {
                                 expandedMenu = false
                                 onClick()
@@ -651,7 +660,7 @@ fun GalleryListItem(
                         )
                     }
                     DropdownMenuItem(
-                        text = { Text("Rename") },
+                        text = { Text(stringResource(R.string.rename)) },
                         onClick = {
                             expandedMenu = false
                             onRename()
@@ -659,7 +668,7 @@ fun GalleryListItem(
                         leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Share") },
+                        text = { Text(stringResource(R.string.share)) },
                         onClick = {
                             expandedMenu = false
                             VideoHelper.shareVideo(context, item)
@@ -667,7 +676,7 @@ fun GalleryListItem(
                         leadingIcon = { Icon(Lucide.Share2, contentDescription = null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                         onClick = {
                             expandedMenu = false
                             onDelete()
@@ -744,7 +753,7 @@ fun ScreenshotViewerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onDismiss) {
-                        Icon(Lucide.ArrowLeft, contentDescription = "Back", tint = Color.White)
+                        Icon(Lucide.ArrowLeft, contentDescription = stringResource(R.string.back), tint = Color.White)
                     }
                     Text(
                         text = imageName,
@@ -758,10 +767,10 @@ fun ScreenshotViewerDialog(
                             .padding(horizontal = 8.dp)
                     )
                     IconButton(onClick = onShare) {
-                        Icon(Lucide.Share2, contentDescription = "Share", tint = Color.White)
+                        Icon(Lucide.Share2, contentDescription = stringResource(R.string.share), tint = Color.White)
                     }
                     IconButton(onClick = onDelete) {
-                        Icon(Lucide.Trash2, contentDescription = "Delete", tint = Color(0xFFEF5350))
+                        Icon(Lucide.Trash2, contentDescription = stringResource(R.string.delete), tint = Color(0xFFEF5350))
                     }
                 }
             }
@@ -788,9 +797,10 @@ fun RenameMediaDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 440.dp),
         title = {
             Text(
-                text = if (isVideo) "Rename Recording" else "Rename Screenshot",
+                text = stringResource(R.string.library_rename_dialog_title),
                 fontWeight = FontWeight.Bold
             )
         },
@@ -799,7 +809,7 @@ fun RenameMediaDialog(
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text("File name") },
+                    label = { Text(stringResource(R.string.library_rename_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -820,12 +830,12 @@ fun RenameMediaDialog(
                 },
                 enabled = text.isNotBlank()
             ) {
-                Text("Rename")
+                Text(stringResource(R.string.rename))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -839,15 +849,16 @@ fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 440.dp),
         title = {
             Text(
-                text = if (media.isVideo) "Delete Recording?" else "Delete Screenshot?",
+                text = stringResource(R.string.library_delete_dialog_title),
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Text(
-                text = "Are you sure you want to permanently delete \"${media.name}\"? This action cannot be undone.",
+                text = stringResource(R.string.library_delete_dialog_msg),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
@@ -856,12 +867,12 @@ fun DeleteConfirmDialog(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("Delete", color = MaterialTheme.colorScheme.onError)
+                Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.onError)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

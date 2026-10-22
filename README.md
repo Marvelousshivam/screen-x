@@ -2,57 +2,70 @@
 
   <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" alt="ScreenX Logo" width="128" height="128" />
 
+<div align="center">
+
 # ScreenX
 
-**Pure, powerful screen recording for Android. No limits, no nonsense.**
+<p><strong>Pure, powerful screen recording for Android. Zero limits, zero nonsense.</strong></p>
 
-  <p>
-    <a href="https://github.com/gtxprime/screen-x/stargazers">
-      <img src="https://img.shields.io/github/stars/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Stars" />
-    </a>
-    <a href="https://github.com/gtxprime/screen-x/network/members">
-      <img src="https://img.shields.io/github/forks/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Forks" />
-    </a>
-    <a href="https://github.com/gtxprime/screen-x/issues">
-      <img src="https://img.shields.io/github/issues/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Issues" />
-    </a>
-    <a href="https://github.com/gtxprime/screen-x/blob/main/LICENSE">
-      <img src="https://img.shields.io/badge/License-MIT-21262d?style=for-the-badge&logoColor=white" alt="License" />
-    </a>
-    <a href="#">
-      <img src="https://img.shields.io/badge/Platform-Android-21262d?logo=android&logoColor=white&style=for-the-badge" alt="Platform" />
-    </a>
-    <a href="https://github.com/gtxprime/screen-x/releases/latest">
-      <img src="https://img.shields.io/github/downloads/gtxprime/screen-x/total?label=Downloads&logo=github&style=for-the-badge&color=21262d&logoColor=white" alt="GitHub Downloads" />
-    </a>
-  </p>
+<p>
+  <a href="https://github.com/gtxprime/screen-x/releases/latest"><img src="https://img.shields.io/github/v/release/gtxprime/screen-x?style=for-the-badge&color=10b981&labelColor=18181b&logo=android&logoColor=white" alt="Latest Version" /></a>
+  <a href="https://github.com/gtxprime/screen-x/stargazers"><img src="https://img.shields.io/github/stars/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Stars" /></a>
+  <a href="https://github.com/gtxprime/screen-x/network/members"><img src="https://img.shields.io/github/forks/gtxprime/screen-x?style=for-the-badge&logo=github&color=21262d&logoColor=white" alt="Forks" /></a>
+  <a href="https://github.com/gtxprime/screen-x/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-21262d?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License" /></a>
+  <a href="https://developer.android.com/about/versions"><img src="https://img.shields.io/badge/Android_API-26--37-21262d?style=for-the-badge&logo=android&logoColor=white" alt="Android API" /></a>
+  <a href="https://github.com/gtxprime/screen-x/releases/latest"><img src="https://img.shields.io/github/downloads/gtxprime/screen-x/total?label=Downloads&logo=github&style=for-the-badge&color=21262d&logoColor=white" alt="Downloads" /></a>
+  <a href="https://hub.xerj.org/contributors/gtxPrime"><img src="https://img.shields.io/badge/XERJ_Corpus_Hub-Contributor-8b5cf6?style=for-the-badge" alt="XERJ Corpus Hub Contributor" /></a>
+</p>
+
+</div>
+
 
   <a href="https://github.com/gtxprime/screen-x/releases/latest">
-    <img src="https://raw.githubusercontent.com/gtxprime/mind-mint/main/docs/assets/github_badge.png" height="96" alt="Get it on GitHub" />
+    <img src="https://raw.githubusercontent.com/gtxprime/mind-mint/main/docs/assets/github_badge.png" height="90" alt="Get it on GitHub" />
   </a>
 
   <h3>
+    <a href="#-about-screenx">About</a>
+    <span> &bull; </span>
+    <a href="#-recording-modes-comparison">Engine Comparison</a>
+    <span> &bull; </span>
     <a href="#-features">Features</a>
     <span> &bull; </span>
-    <a href="#-tech-stack">Tech Stack</a>
+    <a href="#-tech-stack--architecture">Tech Stack</a>
     <span> &bull; </span>
     <a href="#-project-structure">Project Structure</a>
     <span> &bull; </span>
-    <a href="#-installation">Installation</a>
+    <a href="#-installation--build">Installation</a>
     <span> &bull; </span>
     <a href="#-roadmap">Roadmap</a>
-    <span> &bull; </span>
-    <a href="#-contributing">Contributing</a>
   </h3>
 
 </div>
 
 ---
 
-## <img src="https://api.iconify.design/fa6-solid/mobile-screen.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="About" /><img src="https://api.iconify.design/fa6-solid/mobile-screen.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="About" /> About ScreenX
+## <a id="-about-screenx"></a><img src="https://api.iconify.design/fa6-solid/mobile-screen.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="About" /><img src="https://api.iconify.design/fa6-solid/mobile-screen.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="About" /> About ScreenX
 
 > [!NOTE]
-> **ScreenX** is a modern, high-performance screen recording utility built for Android. It prioritizes smooth performance, minimal system overhead, and useful productivity features like live annotations and floating overlays. Whether you're recording gameplay, creating app walkthroughs, or capturing bug reports, ScreenX handles it with style.
+> **ScreenX** is an open-source, rootless, high-performance screen recording studio engineered for modern Android devices. Designed with Jetpack Compose, AGSL hardware shaders, and dual recording architectures (Standard MediaProjection & Stealth Wireless ADB), ScreenX offers complete freedom over video quality, multi-source audio mixing, live drawing, and background stealth capture.
+
+---
+
+## <a id="-recording-modes-comparison"></a><img src="https://api.iconify.design/fa6-solid/scale-balanced.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Comparison" /><img src="https://api.iconify.design/fa6-solid/scale-balanced.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Comparison" /> Dual Recording Engine Comparison
+
+ScreenX offers two completely distinct capture pipelines to fit any recording situation:
+
+| Feature / Capability | Standard Capture (`MediaProjection`) | Stealth Capture (`Wireless ADB`) |
+| :--- | :---: | :---: |
+| **Detection by Apps** | Standard API (Apps can detect active capture) | **100% Undetected** (Bypasses app listeners like Snapchat) |
+| **System Capture Prompt** | OS confirmation dialog on launch | **Zero System Dialogs** (Completely invisible start) |
+| **Audio Capture** | Internal System Audio, Mic, or Synchronized Dual Audio | **Acoustic Speaker Audio** (Mic DSP + Noise Clearing + Gain Boost) |
+| **Duration Limit** | Unlimited (Device storage bound) | **Unlimited** (Auto-continues past 3 min & lossless merge) |
+| **Root Required?** | ❌ No Root Required | ❌ **No Root Required** (Uses Wireless Debugging pairing) |
+| **Floating Overlay & Brush** | ✅ Supported | ✅ Supported |
+| **Quick Settings Tile** | ✅ Instant 1-Tap Trigger | ✅ Instant 1-Tap Trigger |
+| **Protected Views (`FLAG_SECURE`)** | Rendered as black screen (OS constraint) | Rendered as black screen (OS constraint) |
 
 ---
 
@@ -61,70 +74,84 @@
 ### <img src="https://api.iconify.design/fa6-solid/user-secret.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Stealth" /><img src="https://api.iconify.design/fa6-solid/user-secret.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Stealth" /> Stealth Recording (Wireless ADB)
 > Completely rootless, background recording without system prompts or app-level detection.
 
-* <img src="https://api.iconify.design/fa6-solid/eye-slash.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/eye-slash.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Undetected by Apps:** Runs via a local Android Debug Bridge (ADB) daemon session. Because it operates outside the standard `MediaProjection` API surface, apps that actively monitor screen recording listeners (such as **Snapchat**) won't detect or trigger recording notifications.
-* <img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **1-Tap Notification Pairing:** Easily pair your device using Android 11+ Wireless Debugging&mdash;simply tap Reply on the ScreenX notification and submit your 6-digit code.
-* <img src="https://api.iconify.design/fa6-solid/wifi.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/wifi.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Zero-Config mDNS Discovery:** Automatically scans and detects wireless debugging ports on your local Wi-Fi.
-* <img src="https://api.iconify.design/fa6-solid/volume-xmark.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/volume-xmark.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Video-Only (No Audio/Voice):** Runs on Android's native `screenrecord` shell command, which only captures the display surface. It **does not record audio or voice** (internal or microphone audio is not captured in Stealth mode). Use standard recording mode if audio capture is required.
-* <img src="https://api.iconify.design/fa6-solid/shield-halved.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/shield-halved.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Limitations & `FLAG_SECURE`:** 
-  > [!IMPORTANT]
-  > Stealth Recording **cannot bypass Android's OS-level `FLAG_SECURE`**. Banking apps, DRM video players (e.g. Netflix, Prime Video), or protected views that explicitly set `WindowManager.LayoutParams.FLAG_SECURE` will be rendered as black screens by Android's hardware surface flinger.
+* <img src="https://api.iconify.design/fa6-solid/eye-slash.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/eye-slash.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Undetected by Screen-Monitoring Apps:** Runs via a local Android Debug Bridge (ADB) daemon session outside the `MediaProjection` API surface. Apps that monitor recording callbacks (such as Snapchat or protected chat screens) cannot detect the session.
+* <img src="https://api.iconify.design/fa6-solid/volume-high.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/volume-high.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Acoustic Speaker Audio Capture:** Android's internal `screenrecord` binary cannot record audio. ScreenX bridges this by recording speaker audio acoustically via microphone DSP with:
+  * **2.5x Pre-amp Volume Gain:** Ensures game audio and app speech are clearly audible.
+  * **Soft-Knee `tanh` Saturation Limiter:** Eliminates harsh clipping and digital distortion.
+  * **Hardware Noise Suppression & Rumble Filter:** Cuts out ambient room hum and fan vibrations.
+  * **Lossless Muxing:** Remuxes real-time AAC audio with the video track with synchronized PTS timestamps.
+* <img src="https://api.iconify.design/fa6-solid/infinity.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/infinity.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Auto-Continue Past 3 Min & Merge:** Bypasses Android's hardcoded 3-minute `screenrecord` limit. When the segment expires, ScreenX automatically spins up the next recording segment without gaps and losslessly joins all parts into a single video file upon stopping.
+* <img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **1-Tap Notification Pairing:** Pair your device with Android 11+ Wireless Debugging easily: tap Reply directly on the ScreenX notification and submit your 6-digit code.
+* <img src="https://api.iconify.design/fa6-solid/wifi.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/wifi.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Zero-Config mDNS Discovery:** Automatically scans and resolves wireless debugging ports dynamically when Wi-Fi or developer options toggle.
+
+> [!IMPORTANT]
+> **Limitations & `FLAG_SECURE`:** Stealth Recording **cannot bypass Android's OS-level `FLAG_SECURE`**. Banking apps, DRM content (Netflix, Prime Video), or screens that explicitly enforce `WindowManager.LayoutParams.FLAG_SECURE` will be rendered black by Android's hardware surface flinger.
 
 ---
 
-### <img src="https://api.iconify.design/fa6-solid/video.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Video" /><img src="https://api.iconify.design/fa6-solid/video.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Video" /> High-Fidelity Recording
-> Configure video output exactly to your device and storage needs.
+### <img src="https://api.iconify.design/fa6-solid/video.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Video" /><img src="https://api.iconify.design/fa6-solid/video.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Video" /> High-Fidelity Recording & Orientation Fixes
+> Crystal-clear video output tailored to your display hardware.
 
-* <img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Custom Configurations:** Adjust resolution (up to 1080p+), frame rates (30/60 FPS), and bitrates.
-* <img src="https://api.iconify.design/fa6-solid/film.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/film.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Format Control:** Output `.mp4` video files using hardware-accelerated MediaCodec API.
-* <img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Dynamic Orientation:** Adapts recording orientation automatically based on device state.
-
----
-
-### <img src="https://api.iconify.design/fa6-solid/microphone-lines.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Audio" /><img src="https://api.iconify.design/fa6-solid/microphone-lines.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Audio" /> Capture Options
-> Clean sound options for any recording context.
-
-* <img src="https://api.iconify.design/fa6-solid/headphones.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/headphones.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Synchronized Dual Audio:** Record internal system audio and external microphone audio simultaneously with synchronized sample interleaving.
-* <img src="https://api.iconify.design/fa6-solid/volume-high.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/volume-high.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Audio Sources:** Switch effortlessly between Microphone, System Audio (Android 10+), or Dual Audio.
-* <img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Custom Quality:** Configure sample rates and audio bitrates for crystal-clear sound.
+* <img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/sliders.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Flexible Settings:** Customize resolutions (720p, 1080p, 1440p+), frame rates (30, 60, 90, 120 FPS), and bitrates (up to 24+ Mbps).
+* <img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/rotate.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Hardened Orientation Safeguards (Custom ROM Fix):**
+  * Resolves landscape pillarboxing and upside-down bugs on affected devices and custom ROMs (InfinityX, crDroid, LineageOS, etc.) where window metrics report portrait bounds during landscape capture.
+  * Hard-enforces `screenWidth = maxOf(w, h)` and `screenHeight = minOf(w, h)` during landscape gameplay.
+  * Simplified, intuitive orientation options: **Auto**, **Portrait**, and **Landscape**.
 
 ---
 
-### <img src="https://api.iconify.design/fa6-solid/paintbrush.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Brush" /><img src="https://api.iconify.design/fa6-solid/paintbrush.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Brush" /> Live Annotations & Brush
-> Annotate your screen on-the-fly while recording is active.
+### <img src="https://api.iconify.design/fa6-solid/microphone-lines.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Audio" /><img src="https://api.iconify.design/fa6-solid/microphone-lines.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Audio" /> Audio Subsystem & Dual Sound
+> Studio-grade audio capture for tutorials, gameplay, and podcasts.
 
-* <img src="https://api.iconify.design/fa6-solid/pen-nib.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/pen-nib.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Draw on Screen:** Canvas overlay lets you draw directly on top of active apps.
-* <img src="https://api.iconify.design/fa6-solid/palette.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/palette.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Custom Styling:** Choose brush colors dynamically and adjust brush size.
-* <img src="https://api.iconify.design/fa6-solid/broom.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/broom.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Quick Actions:** Erase strokes or clear the canvas instantly.
-
----
-
-### <img src="https://api.iconify.design/fa6-solid/table-columns.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Overlay" /><img src="https://api.iconify.design/fa6-solid/table-columns.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Overlay" /> Floating Control Panel
-> Non-intrusive widget for quick, easy management.
-
-* <img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/bolt.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Quick Access:** Expanded controls for record, pause, stop, and brush tools.
-* <img src="https://api.iconify.design/fa6-solid/magnet.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/magnet.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Smart Snapping:** Drag-and-drop widget snaps to screen edges and saves position.
-* <img src="https://api.iconify.design/fa6-solid/eye.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/eye.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Auto-Hide:** Fades/hides during inactivity or user interaction.
+* <img src="https://api.iconify.design/fa6-solid/headphones.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/headphones.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Synchronized Dual Audio:** Record internal game audio and microphone voice simultaneously with mathematical sample interleaving and zero sync drift.
+* <img src="https://api.iconify.design/fa6-solid/volume-high.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/volume-high.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Multiple Audio Sources:** Choose between **Mute**, **Microphone**, **Internal System Audio** (Android 10+), or **Dual Audio**.
+* <img src="https://api.iconify.design/fa6-solid/wave-square.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/wave-square.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Voice Priority & Vocal Clarity:** Automatic ducking lowers background game music when speaking, backed by an acoustic clarity filter.
 
 ---
 
-### <img src="https://api.iconify.design/fa6-solid/toggle-on.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Tile" /><img src="https://api.iconify.design/fa6-solid/toggle-on.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Tile" /> Quick Settings Tile Integration
-> Start recording in a single tap without opening the main app interface.
+### <img src="https://api.iconify.design/fa6-solid/paintbrush.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Brush" /><img src="https://api.iconify.design/fa6-solid/paintbrush.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Brush" /> Live Annotations & Brush Overlay
+> Draw and annotate live over apps while recording.
 
-* <img src="https://api.iconify.design/fa6-solid/hand-pointer.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/hand-pointer.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **One-Tap Recording:** Instantly initiate or stop recordings directly from Android Quick Settings.
-* <img src="https://api.iconify.design/fa6-solid/gears.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/gears.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Background Launching:** Handles foreground service and media projection requests seamlessly.
+* <img src="https://api.iconify.design/fa6-solid/pen-nib.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/pen-nib.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **On-Screen Canvas:** Full-screen transparent overlay allows real-time drawing, highlighting, and writing.
+* <img src="https://api.iconify.design/fa6-solid/palette.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/palette.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Customizable Brush:** Dynamically select color swatches and adjust line thickness.
+* <img src="https://api.iconify.design/fa6-solid/broom.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/broom.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Instant Clearing:** Undo or erase strokes with one tap without interrupting the video stream.
 
 ---
 
-## <a id="-tech-stack"></a><img src="https://api.iconify.design/fa6-solid/microchip.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Tech Stack" /><img src="https://api.iconify.design/fa6-solid/microchip.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Tech Stack" /> Tech Stack & Architecture
+### <img src="https://api.iconify.design/fa6-solid/table-columns.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Overlay" /><img src="https://api.iconify.design/fa6-solid/table-columns.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Overlay" /> Floating Controls & Quick Settings Tile
+> Control recordings effortlessly from anywhere on your device.
 
-ScreenX is designed with modern Android development practices, ensuring scalability, performance, and clean code division:
+* <img src="https://api.iconify.design/fa6-solid/magnet.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/magnet.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Magnetic Floating Bubble:** Draggable floating pill that snaps to screen edges, expandable for quick access to record, pause, screenshot, and brush tools.
+* <img src="https://api.iconify.design/fa6-solid/toggle-on.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/toggle-on.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Quick Settings Tile Integration:** Start or stop Standard or Stealth recordings in one tap directly from Android's notification shade.
+
+---
+
+### <img src="https://api.iconify.design/fa6-solid/scissors.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Trimmer" /><img src="https://api.iconify.design/fa6-solid/scissors.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Trimmer" /> Built-in Video Trimmer & Media Gallery
+> Review, manage, and edit your recordings without third-party apps.
+
+* <img src="https://api.iconify.design/fa6-solid/film.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/film.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Lossless Video Trimming:** Quick start-point and end-point trimming using MediaExtractor and MediaMuxer without re-encoding quality loss.
+* <img src="https://api.iconify.design/fa6-solid/photo-film.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/photo-film.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Built-In Gallery:** Browse screenshots and video recordings with file details, thumbnail previews, and batch deletion.
+
+---
+
+### <img src="https://api.iconify.design/fa6-solid/language.svg?color=%23ffffff#gh-dark-mode-only" height="18" align="center" alt="Localization" /><img src="https://api.iconify.design/fa6-solid/language.svg?color=%23121212#gh-light-mode-only" height="18" align="center" alt="Localization" /> Multi-Language Localization
+> Fully translated interface for global users.
+
+* Complete translations across **English**, **Spanish (Español)**, **Russian (Русский)**, **Ukrainian (Українська)**, and **Hindi (हिन्दी)** with in-app language switching without restarting the app.
+
+---
+
+## <a id="-tech-stack--architecture"></a><img src="https://api.iconify.design/fa6-solid/microchip.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Tech Stack" /><img src="https://api.iconify.design/fa6-solid/microchip.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Tech Stack" /> Tech Stack & Architecture
+
+ScreenX is built strictly following modern Android development practices and Jetpack components:
 
 * **Language:** 100% Kotlin
-* **UI Framework:** Jetpack Compose with Material Design 3 and AGSL (Android Graphics Shading Language) dynamic hardware-accelerated shaders
-* **Background Tasks:** Android Foreground Services (`ScreenRecordService`, `AdbRecordService`, `PairingInputService`)
-* **Media Pipelines:** MediaProjection API, Wireless ADB daemon capture, and synchronized dual `AudioRecord` / `AudioPlaybackCapture`
-* **State Management:** Kotlin Coroutines and Flows for reactive settings management
-* **Data Layer:** Jetpack DataStore Preferences for storing user configurations
+* **UI Toolkit:** Jetpack Compose with Material Design 3 and AGSL (Android Graphics Shading Language) custom shaders
+* **Video Capture Pipelines:** `MediaProjection`, `MediaCodec`, `MediaMuxer`, and local Wireless ADB daemon (`/system/bin/screenrecord`)
+* **Audio Pipelines:** Low-latency `AudioRecord`, `AudioPlaybackCaptureConfiguration`, and native hardware `NoiseSuppressor`
+* **Background Architecture:** Android Foreground Services (`ScreenRecordService`, `AdbRecordService`, `PairingInputService`)
+* **State & Persistence:** Kotlin Coroutines & Flows, Jetpack DataStore Preferences
+* **Target SDK:** 37 (Android 15 / 16 ready) &bull; **Min SDK:** 26 (Android 8.0+)
 
 ---
 
@@ -135,83 +162,95 @@ screen-x
 │
 ├── app/src/main/java/com/gxdevs/screenx/
 │   ├── data/
-│   │   ├── AdbManager.kt            # TLS key-exchange, pairing, and ADB daemon commands
-│   │   ├── AdbMdns.kt               # Local mDNS discovery for Wireless Debugging ports
-│   │   └── SettingsManager.kt       # Manages recording, audio, and UI settings
+│   │   ├── AdbManager.kt              # TLS key-exchange, pairing, and ADB daemon protocol
+│   │   ├── AdbMdns.kt                 # Local mDNS discovery for Wireless Debugging ports
+│   │   └── SettingsManager.kt         # Jetpack DataStore settings repository
 │   │
 │   ├── service/
-│   │   ├── ScreenRecordService.kt   # Standard MediaProjection recording service
-│   │   ├── AdbRecordService.kt      # Stealth recording service via local ADB socket
-│   │   ├── PairingInputService.kt   # Background notification reply receiver for pairing
-│   │   ├── AudioCaptureHelper.kt    # Synchronized dual internal & microphone audio capture
-│   │   ├── FloatingControlOverlay.kt # Draggable overlay control panel
-│   │   ├── BrushDrawingOverlay.kt   # Canvas overlay for drawing on screen
-│   │   ├── CountdownOverlay.kt      # Initial countdown overlay before recording
-│   │   ├── ScreenXTileService.kt    # Quick Settings Tile service
-│   │   └── TileHelperActivity.kt    # Invisible activity helper for tile launches
+│   │   ├── ScreenRecordService.kt     # Standard MediaProjection recording service
+│   │   ├── AdbRecordService.kt        # Stealth recording service via local ADB daemon socket
+│   │   ├── AudioCaptureHelper.kt      # Low-latency internal & microphone audio capture engine
+│   │   ├── BrushDrawingOverlay.kt     # Canvas overlay for real-time screen drawing
+│   │   ├── CountdownOverlay.kt        # Pre-capture countdown visual overlay
+│   │   ├── FloatingControlOverlay.kt  # Draggable floating pill overlay controller
+│   │   ├── PairingInputReceiver.kt    # Direct-reply notification broadcast receiver
+│   │   ├── PairingInputService.kt     # Foreground pairing handler service
+│   │   ├── ScreenXTileService.kt      # Quick Settings Tile service
+│   │   └── TileHelperActivity.kt      # Transparent launch helper for Quick Settings tiles
 │   │
 │   ├── ui/
 │   │   ├── components/
-│   │   │   └── ShaderGradientCard.kt # AGSL brushed gunmetal metallic shader with touch ripple
+│   │   │   ├── LanguageSelectionBottomSheet.kt # Language picker bottom sheet
+│   │   │   ├── ShaderGradientCard.kt           # AGSL brushed metallic card shader
+│   │   │   └── UpdateDialog.kt                 # In-app GitHub update dialog
 │   │   ├── screens/
-│   │   │   ├── HomeScreen.kt        # Home UI with stealth/standard modes & video gallery
-│   │   │   └── SettingsScreen.kt    # Material You stacked settings & audio configurations
+│   │   │   ├── GalleryScreen.kt       # Video & screenshot library screen
+│   │   │   ├── HomeScreen.kt          # Primary control hub with dual capture cards
+│   │   │   ├── SettingsScreen.kt      # Modular stacked settings screen
+│   │   │   └── VideoTrimmerScreen.kt  # Frame-accurate video trimming screen
 │   │   └── theme/
-│   │       ├── Color.kt             # Material 3 theme colors & dark container styling
-│   │       ├── Theme.kt             # Application theme initialization
-│   │       └── Type.kt              # Font and typography settings
+│   │       ├── Color.kt               # Theme palette & semantic color tokens
+│   │       ├── Theme.kt               # Dynamic color & Material 3 theme wrapper
+│   │       └── Type.kt                # Typography styles
 │   │
 │   ├── utils/
-│   │   └── VideoHelper.kt           # Utilities for video file queries and deletions
+│   │   ├── DeviceCapabilitiesHelper.kt # Hardware refresh rate, resolutions & metrics
+│   │   ├── LocaleHelper.kt            # Runtime language configuration helper
+│   │   ├── NetworkUtils.kt            # Network & Wi-Fi state helpers
+│   │   ├── UpdateManager.kt           # GitHub release update checker & downloader
+│   │   ├── VideoHelper.kt             # MediaStore queries and deletion utilities
+│   │   ├── VideoMerger.kt             # Lossless video & audio muxing engine
+│   │   └── VideoTrimmer.kt            # MP4 extractor & muxer trimmer utility
 │   │
-│   └── MainActivity.kt              # Entry point activity handling permissions & navigation
+│   └── MainActivity.kt                # Root Compose Activity & permission orchestrator
 ```
 
 ---
 
-## <a id="-installation"></a><img src="https://api.iconify.design/fa6-solid/screwdriver-wrench.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Installation" /><img src="https://api.iconify.design/fa6-solid/screwdriver-wrench.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Installation" /> Installation & Development Setup
+## <a id="-installation--build"></a><img src="https://api.iconify.design/fa6-solid/screwdriver-wrench.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Installation" /><img src="https://api.iconify.design/fa6-solid/screwdriver-wrench.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Installation" /> Installation & Build
 
-### Prerequisites
-* Android Studio (Ladybug or newer recommended)
-* Android SDK 26 (Android 8.0) or higher
-* Java Development Kit (JDK) 17
+### Download APK
+Download the latest pre-compiled signed APK directly from [GitHub Releases](https://github.com/gtxprime/screen-x/releases/latest).
 
 ### Building from Source
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/gtxprime/screen-x.git
    cd screen-x
    ```
-2. Open the project in Android Studio.
-3. Sync Gradle and build the project:
+2. **Open the project** in Android Studio (Ladybug or newer).
+3. **Assemble Release APK**:
    ```bash
    ./gradlew assembleRelease
    ```
-4. Run the app on a connected physical device or emulator.
+4. Find the built APK at:
+   ```
+   app/build/outputs/apk/release/app-release.apk
+   ```
 
 ---
 
-## <a id="-roadmap"></a><img src="https://api.iconify.design/fa6-solid/map-location-dot.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Roadmap" /><img src="https://api.iconify.design/fa6-solid/map-location-dot.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Roadmap" /> Upcoming Roadmap
+## <a id="-roadmap"></a><img src="https://api.iconify.design/fa6-solid/map-location-dot.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Roadmap" /><img src="https://api.iconify.design/fa6-solid/map-location-dot.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Roadmap" /> Project Roadmap
 
-Here are features actively in development and planned for upcoming updates:
-
-* [ ] <img src="https://api.iconify.design/fa6-solid/camera.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/camera.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Camera Overlay (Facecam):** Floating front/back camera bubble overlay on the screen while recording, with drag-to-move, pinch-to-resize, and circular/rectangular shape customization.
-* [x] <img src="https://api.iconify.design/fa6-solid/headphones.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/headphones.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Simultaneous Dual Audio:** Concurrent mic and system audio capture with hardware sample synchronization.
-* [x] <img src="https://api.iconify.design/fa6-solid/user-secret.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/user-secret.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Stealth Recording Mode:** Background rootless capture without app-level recording alerts.
-* [ ] <img src="https://api.iconify.design/fa6-solid/cloud-arrow-up.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/cloud-arrow-up.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Cloud Backup & Instant Sharing:** Optional export and compression presets optimized for messaging apps.
+* [x] **Simultaneous Dual Audio:** Concurrent mic and system audio capture with hardware sample synchronization.
+* [x] **Stealth Recording Mode:** Background rootless capture without app-level recording alerts.
+* [x] **Acoustic Speaker Audio Capture for Stealth:** Low-latency speaker audio capture with hardware noise suppression and volume boost.
+* [x] **Unlimited ADB Recording & Auto-Merge:** Multi-segment continuous recording past the 3-minute limit.
+* [x] **Hardware Orientation Safeguards:** Fix portrait pillarboxing on affected devices and custom ROMs.
+* [ ] <img src="https://api.iconify.design/fa6-solid/shield-halved.svg?color=%23ffffff#gh-dark-mode-only" height="15" align="center" /><img src="https://api.iconify.design/fa6-solid/shield-halved.svg?color=%23121212#gh-light-mode-only" height="15" align="center" /> **Root Device Ultra Powers (Bypass FLAG_SECURE) [Coming Soon]:** Native Root / KernelSU / Magisk / APatch integration hooking into SurfaceFlinger and WindowManager to record protected views, banking apps, and DRM media without black screen restrictions.
+* [ ] **Camera Overlay (Facecam):** Floating front/back camera bubble with pinch-to-resize and custom shapes.
+* [ ] **GIF Exporter:** Export short recordings directly to lightweight animated `.gif` files.
 
 ---
 
-## <a id="-contributing"></a><img src="https://api.iconify.design/fa6-solid/handshake.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Contributing" /><img src="https://api.iconify.design/fa6-solid/handshake.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Contributing" /> Contributing
+## <img src="https://api.iconify.design/fa6-solid/handshake.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="Contributing" /><img src="https://api.iconify.design/fa6-solid/handshake.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="Contributing" /> Contributing
 
-Contributions are welcome! If you find bugs, have feature requests, or want to enhance ScreenX:
-1. **Fork** the repository.
-2. **Create a branch** for your feature/bug fix (`git checkout -b feature/amazing-feature`).
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`).
-4. **Push** to the branch (`git push origin feature/amazing-feature`).
-5. **Open a Pull Request**.
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+Contributions are warmly welcomed! Feel free to report issues, suggest improvements, or submit pull requests.
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
@@ -223,4 +262,4 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## <img src="https://api.iconify.design/fa6-solid/scale-balanced.svg?color=%23ffffff#gh-dark-mode-only" height="20" align="center" alt="License" /><img src="https://api.iconify.design/fa6-solid/scale-balanced.svg?color=%23121212#gh-light-mode-only" height="20" align="center" alt="License" /> License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

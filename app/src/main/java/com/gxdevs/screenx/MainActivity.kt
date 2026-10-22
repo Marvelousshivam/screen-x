@@ -49,9 +49,16 @@ import com.gxdevs.screenx.utils.UpdateManager
 import com.gxdevs.screenx.utils.UpdateCheckResult
 import com.gxdevs.screenx.utils.AppUpdateInfo
 import com.gxdevs.screenx.ui.components.UpdateDialog
+
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.LocalActivityResultRegistryOwner
+import com.gxdevs.screenx.utils.LocaleHelper
 
 enum class ScreenState {
     HOME,
@@ -66,6 +73,11 @@ class MainActivity : ComponentActivity() {
         /** Set to true when launching from the Quick Settings tile to auto-start recording */
         const val EXTRA_START_RECORDING = "extra_start_recording"
         const val EXTRA_OPEN_SETTINGS = "extra_open_settings"
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        val lang = SettingsManager.getLanguageSync(newBase)
+        super.attachBaseContext(LocaleHelper.applyLocale(newBase, lang))
     }
 
     private lateinit var settingsManager: SettingsManager
@@ -105,7 +117,7 @@ class MainActivity : ComponentActivity() {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             startRecordingService(result.resultCode, result.data!!)
         } else {
-            Toast.makeText(this, "Screen capture permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -117,7 +129,7 @@ class MainActivity : ComponentActivity() {
             if (Settings.canDrawOverlays(this)) {
                 checkPermissionsAndStartProjection()
             } else {
-                Toast.makeText(this, "Display over other apps permission is required for floating controls", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.toast_overlay_required), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -128,8 +140,14 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             refreshVideos()
-            Toast.makeText(this, "Video deleted successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_video_deleted), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private val adbMicPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        startAdbRecordService()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -161,27 +179,42 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val themeMode by settingsManager.themeModeFlow.collectAsState(initial = "system")
-            val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
-            val (darkTheme, dynamicColor) = remember(themeMode, isSystemDark) {
-                when (themeMode) {
-                    "dark" -> Pair(true, false)
-                    "light" -> Pair(false, false)
-                    "dynamic" -> Pair(isSystemDark, true)
-                    else -> Pair(isSystemDark, false)
-                }
+            val currentLanguageCode by settingsManager.languageFlow.collectAsState(
+                initial = SettingsManager.getLanguageSync(this@MainActivity)
+            )
+            val localizedContext = remember(currentLanguageCode) {
+                LocaleHelper.wrapActivityContext(this@MainActivity, currentLanguageCode)
             }
-            ScreenXTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
-                var currentScreen by remember {
-                    mutableStateOf(
-                        if (intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true) ScreenState.SETTINGS
-                        else ScreenState.HOME
-                    )
+            val localizedConfiguration = remember(localizedContext) {
+                localizedContext.resources.configuration
+            }
+
+            CompositionLocalProvider(
+                LocalContext provides localizedContext,
+                LocalConfiguration provides localizedConfiguration,
+                LocalActivityResultRegistryOwner provides this@MainActivity
+            ) {
+                val themeMode by settingsManager.themeModeFlow.collectAsState(initial = "system")
+                val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
+                val (darkTheme, dynamicColor) = remember(themeMode, isSystemDark) {
+                    when (themeMode) {
+                        "dark" -> Pair(true, false)
+                        "light" -> Pair(false, false)
+                        "dynamic" -> Pair(isSystemDark, true)
+                        else -> Pair(isSystemDark, false)
+                    }
                 }
+                ScreenXTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
+                    var currentScreen by remember {
+                        mutableStateOf(
+                            if (intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true) ScreenState.SETTINGS
+                            else ScreenState.HOME
+                        )
+                    }
                 var selectedVideoForTrimming by remember { mutableStateOf<RecordedVideo?>(null) }
                 var startupUpdateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
-                
-                // Auto-check for updates on app start if enabled
+
+                // Optional: only checks for updates when the user has enabled Auto Check Updates in Settings
                 LaunchedEffect(Unit) {
                     val autoCheck = settingsManager.autoCheckUpdatesFlow.first()
                     if (autoCheck) {
@@ -324,7 +357,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Startup Update Dialog
+                // Optional update dialog — only shown when Auto Check Updates is ON in Settings
                 startupUpdateInfo?.let { updateInfo ->
                     UpdateDialog(
                         updateInfo = updateInfo,
@@ -340,6 +373,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
     }
 
     override fun onResume() {
@@ -411,7 +445,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestOverlayPermission() {
-        Toast.makeText(this, "Please enable 'Display over other apps' to use floating controls", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, getString(R.string.toast_overlay_required), Toast.LENGTH_LONG).show()
         val intent = Intent(
             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
             Uri.parse("package:$packageName")
@@ -473,10 +507,17 @@ class MainActivity : ComponentActivity() {
             permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: true
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notifGranted = permissions[Manifest.permission.POST_NOTIFICATIONS]
+            if (notifGranted == false) {
+                Toast.makeText(this, getString(R.string.toast_notif_denied_warning), Toast.LENGTH_LONG).show()
+            }
+        }
+
         if (recordAudioGranted && storageGranted) {
             startScreenCaptureIntent()
         } else {
-            Toast.makeText(this, "Required permissions denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -489,11 +530,30 @@ class MainActivity : ComponentActivity() {
         captureLauncher.launch(captureIntent)
     }
 
+    private fun isCurrentUiLandscape(): Boolean {
+        val rot = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display?.rotation ?: android.view.Surface.ROTATION_0
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.rotation
+        }
+        val isRotLandscape = rot == android.view.Surface.ROTATION_90 || rot == android.view.Surface.ROTATION_270
+        val isConfigLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val isMetricsLandscape = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val bounds = windowManager.currentWindowMetrics.bounds
+                bounds.width() > bounds.height()
+            } catch (_: Exception) { false }
+        } else false
+        return isRotLandscape || isConfigLandscape || isMetricsLandscape
+    }
+
     private fun startRecordingService(resultCode: Int, resultData: Intent) {
         val serviceIntent = Intent(this, ScreenRecordService::class.java).apply {
             action = ScreenRecordService.ACTION_START
             putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
             putExtra(ScreenRecordService.EXTRA_RESULT_DATA, resultData)
+            putExtra(ScreenRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
         }
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -517,7 +577,7 @@ class MainActivity : ComponentActivity() {
         
         if (deleted) {
             refreshVideos()
-            Toast.makeText(this, "Recording deleted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.library_deleted_success), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -546,26 +606,35 @@ class MainActivity : ComponentActivity() {
                 if (!isPaired) {
                     Toast.makeText(
                         this@MainActivity,
-                        "Stealth Recording is not paired. Please pair first.",
+                        getString(R.string.home_toast_stealth_not_paired),
                         Toast.LENGTH_LONG
                     ).show()
                     return@launch
                 }
-                // Launch the ADB recording service
-                try {
-                    val startIntent = Intent(this@MainActivity, AdbRecordService::class.java).apply {
-                        action = AdbRecordService.ACTION_START_ADB
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(startIntent)
-                    } else {
-                        startService(startIntent)
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("MainActivity", "Failed to start Stealth recording service", e)
-                    Toast.makeText(this@MainActivity, "Could not start Stealth recording: ${e.message}", Toast.LENGTH_SHORT).show()
+                val isRecordAudio = settingsManager.adbRecordAudioFlow.first()
+                if (isRecordAudio && ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    adbMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    return@launch
                 }
+                startAdbRecordService()
             }
+        }
+    }
+
+    private fun startAdbRecordService() {
+        try {
+            val startIntent = Intent(this@MainActivity, AdbRecordService::class.java).apply {
+                action = AdbRecordService.ACTION_START_ADB
+                putExtra(AdbRecordService.EXTRA_CALLER_IS_LANDSCAPE, isCurrentUiLandscape())
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(startIntent)
+            } else {
+                startService(startIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to start Stealth recording service", e)
+            Toast.makeText(this@MainActivity, getString(R.string.home_toast_stealth_error_fmt, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
     }
 

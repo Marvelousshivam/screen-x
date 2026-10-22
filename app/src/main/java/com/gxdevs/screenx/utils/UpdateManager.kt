@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import com.gxdevs.screenx.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -139,7 +140,7 @@ object UpdateManager {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "Could not open browser: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.toast_browser_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -153,7 +154,7 @@ object UpdateManager {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "Could not open browser: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.toast_browser_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
     }
 }

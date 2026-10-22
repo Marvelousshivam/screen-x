@@ -78,6 +78,7 @@ import com.composables.icons.lucide.Zap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -121,6 +122,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.gxdevs.screenx.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -239,6 +241,22 @@ fun HomeScreen(
     onRefresh: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val appIconBitmap = remember(context) {
+        try {
+            val drawable = ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
+            if (drawable != null) {
+                val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96
+                val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val canvas = android.graphics.Canvas(bitmap)
+                drawable.setBounds(0, 0, width, height)
+                drawable.draw(canvas)
+                bitmap.asImageBitmap()
+            } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
     val coroutineScope = rememberCoroutineScope()
     var selectedVideoForPlayback by remember { mutableStateOf<RecordedVideo?>(null) }
     var selectedScreenshotForViewer by remember { mutableStateOf<RecordedVideo?>(null) }
@@ -285,7 +303,7 @@ fun HomeScreen(
             if (!adbPaired) {
                 android.widget.Toast.makeText(
                     context,
-                    "Stealth Recording is not paired. Please complete setup first.",
+                    context.getString(R.string.home_toast_stealth_not_paired),
                     android.widget.Toast.LENGTH_LONG
                 ).show()
                 showAdbPairingDialog = true
@@ -321,19 +339,27 @@ fun HomeScreen(
     // Check internal audio status
     val isInternalAudioSelected = audioSource == "System" || audioSource == "MicSystem"
 
-    // Configuration / Orientation detection
+    // Configuration / Orientation & Foldable / Tablet detection
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isWideScreen = configuration.screenWidthDp >= 600
+    val useMultiColumn = isLandscape || isWideScreen
 
-    if (isLandscape) {
-        // Landscape Layout
-        Row(
+    if (useMultiColumn) {
+        // Multi-column Layout (Landscape, Foldables unfolded & Tablets)
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 1200.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             // Left Side: Record Card (sized down to fit vertically)
             Card(
                 shape = RoundedCornerShape(24.dp),
@@ -354,9 +380,9 @@ fun HomeScreen(
                     val landscapeRecordingActive = if (swapHomeCards) isAdbRecordingActual else isRecordingActive
                     Text(
                         text = if (landscapeRecordingActive) {
-                            if (swapHomeCards) "Stealth Recording..." else "Recording Screen..."
+                            if (swapHomeCards) stringResource(R.string.home_stealth_recording) else stringResource(R.string.home_recording_screen)
                         } else {
-                            if (swapHomeCards) "Ready for Stealth" else "Ready to Record"
+                            if (swapHomeCards) stringResource(R.string.home_ready_for_stealth) else stringResource(R.string.home_ready_to_record)
                         },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
@@ -415,10 +441,10 @@ fun HomeScreen(
                                 else -> Lucide.Mic
                             },
                             label = when (audioSource) {
-                                "System" -> "Device Audio"
-                                "MicSystem" -> "Mic + Device"
-                                "None" -> "No Audio"
-                                else -> "Microphone"
+                                "System" -> stringResource(R.string.audio_display_system)
+                                "MicSystem" -> stringResource(R.string.audio_display_dual)
+                                "None" -> stringResource(R.string.audio_display_none)
+                                else -> stringResource(R.string.audio_display_mic)
                             },
                             isActive = true,
                             onClick = { showAudioDialog = true }
@@ -431,7 +457,11 @@ fun HomeScreen(
                                 "Portrait" -> Lucide.Smartphone
                                 else -> Lucide.Tablet
                             },
-                            label = orientation,
+                            label = when (orientation) {
+                                "Portrait" -> stringResource(R.string.orientation_portrait)
+                                "Landscape" -> stringResource(R.string.orientation_landscape)
+                                else -> stringResource(R.string.orientation_auto)
+                            },
                             onClick = {
                                 val nextOri = when (orientation) {
                                     "Auto" -> "Portrait"
@@ -462,11 +492,21 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.logo_no_bg),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        if (appIconBitmap != null) {
+                            Image(
+                                bitmap = appIconBitmap,
+                                contentDescription = "ScreenX Icon",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_no_bg),
+                                contentDescription = "ScreenX Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                         Text(
                             "ScreenX",
                             fontSize = 22.sp,
@@ -530,10 +570,10 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = when (audioSource) {
-                                    "System" -> "Internal Audio"
-                                    "MicSystem" -> "Mic + Internal"
-                                    "None" -> "No Audio"
-                                    else -> "Microphone"
+                                    "System" -> stringResource(R.string.audio_display_system)
+                                    "MicSystem" -> stringResource(R.string.audio_display_dual)
+                                    "None" -> stringResource(R.string.audio_display_none)
+                                    else -> stringResource(R.string.audio_display_mic)
                                 },
                                 color = internalAudioText,
                                 fontSize = 11.sp,
@@ -563,7 +603,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Screenshot",
+                                text = stringResource(R.string.home_take_screenshot),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -579,7 +619,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Recent Recordings",
+                        text = stringResource(R.string.home_recent_recordings),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -587,14 +627,14 @@ fun HomeScreen(
                     IconButton(
                         onClick = {
                             if (isSaving) {
-                                Toast.makeText(context, "Finalizing recording, please wait...", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.home_toast_finalizing), Toast.LENGTH_SHORT).show()
                             } else {
                                 isRefreshing = true
                                 onRefresh()
                                 coroutineScope.launch {
                                     kotlinx.coroutines.delay(650)
                                     isRefreshing = false
-                                    Toast.makeText(context, "Library refreshed (${videos.size} items)", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.home_toast_refreshed_fmt, videos.size), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -602,7 +642,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             imageVector = Lucide.RotateCcw,
-                            contentDescription = "Refresh recordings",
+                            contentDescription = stringResource(R.string.refresh),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .size(14.dp)
@@ -629,7 +669,7 @@ fun HomeScreen(
                                 strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Saving recording...", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(stringResource(R.string.home_toast_finalizing), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -641,7 +681,7 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No recordings yet",
+                            text = stringResource(R.string.home_no_recordings),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp
                         )
@@ -669,15 +709,22 @@ fun HomeScreen(
                 }
             }
         }
+        }
     } else {
         // Portrait Layout
         val scrollState = rememberScrollState()
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(scrollState)
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 600.dp)
+                    .verticalScroll(scrollState)
+            ) {
             // Header Bar
             Row(
                 modifier = Modifier
@@ -690,11 +737,21 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo_no_bg),
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (appIconBitmap != null) {
+                        Image(
+                            bitmap = appIconBitmap,
+                            contentDescription = "ScreenX Icon",
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_no_bg),
+                            contentDescription = "ScreenX Icon",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                     Text(
                         "ScreenX",
                         fontSize = 24.sp,
@@ -735,13 +792,13 @@ fun HomeScreen(
                             if (swapHomeCards) triggerAdbRecord() else onStartRecordingClick()
                         },
                         titleText = if (swapHomeCards) {
-                            if (isAdbRecording) "Stealth Recording" else "Stealth Record"
+                            if (isAdbRecording) stringResource(R.string.home_stealth_recording) else stringResource(R.string.home_stealth_title)
                         } else null,
                         subtitleText = if (swapHomeCards) {
-                            if (isAdbRecording) "Tap to stop stealth capture" else "Tap for silent stealth capture"
+                            if (isAdbRecording) stringResource(R.string.home_tap_to_stop) else stringResource(R.string.home_stealth_sub)
                         } else null,
                         badgeText = if (swapHomeCards) {
-                            if (isAdbRecording) "REC" else if (adbPaired) "Ready" else "Pair Required"
+                            if (isAdbRecording) stringResource(R.string.home_rec_badge) else if (adbPaired) stringResource(R.string.badge_paired) else stringResource(R.string.home_unpaired)
                         } else null,
                         icon = if (swapHomeCards) Lucide.Zap else null,
                         modifier = Modifier
@@ -780,7 +837,7 @@ fun HomeScreen(
                                         .clip(CircleShape)
                                         .background(
                                             if (freeSpaceGB < 2) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-                                            else MaterialTheme.colorScheme.surfaceVariant
+                                             else MaterialTheme.colorScheme.surfaceVariant
                                         )
                                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
                                 ) {
@@ -802,7 +859,7 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "Available Space",
+                                        text = stringResource(R.string.available_space),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         lineHeight = 14.sp,
@@ -853,10 +910,10 @@ fun HomeScreen(
                                 Column {
                                     Text(
                                         text = when (audioSource) {
-                                            "System" -> "Device Audio"
-                                            "MicSystem" -> "Mic + Device"
-                                            "None" -> "Muted"
-                                            else -> "Microphone"
+                                            "System" -> stringResource(R.string.audio_display_system)
+                                            "MicSystem" -> stringResource(R.string.audio_display_dual)
+                                            "None" -> stringResource(R.string.audio_display_muted)
+                                            else -> stringResource(R.string.audio_display_mic)
                                         },
                                         color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 15.sp,
@@ -867,7 +924,7 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = if (audioSource == "MicSystem" && voicePriority) "Auto Voice Priority" else "Audio Source",
+                                        text = if (audioSource == "MicSystem" && voicePriority) stringResource(R.string.setting_voice_priority_title) else stringResource(R.string.setting_audio_input_title),
                                         color = if (audioSource == "MicSystem" && voicePriority) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         lineHeight = 14.sp,
@@ -938,7 +995,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "${fps} FPS Video",
+                                    text = stringResource(R.string.fps_video_fmt, fps),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 11.sp,
                                     lineHeight = 14.sp,
@@ -993,7 +1050,11 @@ fun HomeScreen(
                             }
                             Column {
                                 Text(
-                                    text = if (orientation == "Auto") "Auto Rotate" else orientation,
+                                    text = when (orientation) {
+                                        "Portrait" -> stringResource(R.string.orientation_portrait)
+                                        "Landscape" -> stringResource(R.string.orientation_landscape)
+                                        else -> stringResource(R.string.auto_rotate)
+                                    },
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
@@ -1003,7 +1064,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Orientation",
+                                    text = stringResource(R.string.setting_orientation_title),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 11.sp,
                                     lineHeight = 14.sp,
@@ -1076,13 +1137,16 @@ fun HomeScreen(
                                 ) {
                                     Text(
                                         text = if (swapHomeCards) {
-                                            if (isRecordingActive) "Standard Recording Active" else "Standard Recording"
+                                            if (isRecordingActive) stringResource(R.string.home_recording_screen) else stringResource(R.string.home_standard_title)
                                         } else {
-                                            if (isAdbRecording) "Stealth Recording Active" else "Stealth Recording"
+                                            if (isAdbRecording) stringResource(R.string.home_stealth_recording) else stringResource(R.string.home_stealth_title)
                                         },
                                         color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
                                     )
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
@@ -1094,10 +1158,10 @@ fun HomeScreen(
                                             MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
                                     ) {
                                         Text(
-                                            text = if (secondaryIsRecording) "REC"
+                                            text = if (secondaryIsRecording) stringResource(R.string.home_rec_badge)
                                             else if (swapHomeCards) "MediaProjection"
-                                            else if (adbPaired) "Ready"
-                                            else "Pair Required",
+                                            else if (adbPaired) stringResource(R.string.badge_paired)
+                                            else stringResource(R.string.badge_set_up),
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (secondaryIsRecording)
@@ -1113,11 +1177,11 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = if (swapHomeCards) {
-                                        if (isRecordingActive) "Tap to stop recording session"
-                                        else "Standard screen capture • MediaProjection"
+                                        if (isRecordingActive) stringResource(R.string.home_tap_to_stop)
+                                        else stringResource(R.string.home_standard_sub)
                                     } else {
-                                        if (isAdbRecording) "Tap to stop recording session"
-                                        else "Undetectable capture • Bypasses app detection"
+                                        if (isAdbRecording) stringResource(R.string.home_tap_to_stop)
+                                        else stringResource(R.string.home_stealth_sub)
                                     },
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 11.sp,
@@ -1168,7 +1232,7 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Gallery",
+                            text = stringResource(R.string.library_title),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
@@ -1176,14 +1240,14 @@ fun HomeScreen(
                         IconButton(
                             onClick = {
                                 if (isSaving) {
-                                    Toast.makeText(context, "Finalizing recording, please wait...", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.home_toast_finalizing), Toast.LENGTH_SHORT).show()
                                 } else {
                                     isRefreshing = true
                                     onRefresh()
                                     coroutineScope.launch {
                                         kotlinx.coroutines.delay(650)
                                         isRefreshing = false
-                                        Toast.makeText(context, "Library refreshed (${videos.size} items)", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.home_toast_refreshed_fmt, videos.size), Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             },
@@ -1191,7 +1255,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Lucide.RotateCcw,
-                                contentDescription = "Refresh recordings",
+                                contentDescription = stringResource(R.string.refresh),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .size(16.dp)
@@ -1201,7 +1265,7 @@ fun HomeScreen(
                     }
                     if (videos.isNotEmpty()) {
                         Text(
-                            text = "View All",
+                            text = stringResource(R.string.home_view_all),
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -1238,14 +1302,14 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(14.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Finalizing & Saving Recording...",
+                                    text = stringResource(R.string.finalizing_recording),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Merging audio and adding to gallery",
+                                    text = stringResource(R.string.merging_audio_gallery),
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1303,7 +1367,7 @@ fun HomeScreen(
                                 coroutineScope.launch {
                                     kotlinx.coroutines.delay(650)
                                     isRefreshing = false
-                                    Toast.makeText(context, "Library refreshed (${videos.size} items)", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.home_toast_refreshed_fmt, videos.size), Toast.LENGTH_SHORT).show()
                                 }
                             },
                         colors = CardDefaults.cardColors(
@@ -1328,7 +1392,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "No recordings visible. Tap to refresh",
+                                text = stringResource(R.string.no_recordings_tap_refresh),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1346,7 +1410,7 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp)
             ) {
                 Text(
-                    text = "Quick Tools",
+                    text = stringResource(R.string.quick_tools),
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -1395,7 +1459,7 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(verticalArrangement = Arrangement.Center) {
                                 Text(
-                                    text = "Trim Video",
+                                    text = stringResource(R.string.trimmer_mode_trim),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
@@ -1403,7 +1467,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Edit and cut your captures",
+                                    text = stringResource(R.string.browse_internal_storage),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 11.sp,
                                     lineHeight = 14.sp
@@ -1432,19 +1496,24 @@ fun HomeScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
         }
+        }
     }
 
     if (showAudioDialog) {
+        val micStr = stringResource(R.string.audio_opt_mic)
+        val sysStr = stringResource(R.string.audio_opt_system)
+        val dualStr = stringResource(R.string.audio_opt_dual)
+        val noneStr = stringResource(R.string.audio_opt_none)
         val mapping = linkedMapOf(
-            "Mic" to "Microphone Only",
-            "System" to "Internal Audio Only",
-            "MicSystem" to "Mic + Internal Audio (Voice Priority)",
-            "None" to "No Audio (Muted)"
+            "Mic" to micStr,
+            "System" to sysStr,
+            "MicSystem" to dualStr,
+            "None" to noneStr
         )
         val options = mapping.values.toList()
-        val selectedOption = mapping[audioSource] ?: "Microphone Only"
+        val selectedOption = mapping[audioSource] ?: micStr
         OptionSelectionDialog(
-            title = "Select Audio Source",
+            title = stringResource(R.string.dialog_select_audio),
             options = options,
             selectedOption = selectedOption,
             onDismiss = { showAudioDialog = false },
@@ -1659,7 +1728,7 @@ fun RecentVideoCard(
                     onDismissRequest = { expandedMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text(if (video.isVideo) "Play" else "View") },
+                        text = { Text(if (video.isVideo) stringResource(R.string.trimmer_play) else stringResource(R.string.home_view_all)) },
                         onClick = {
                             expandedMenu = false
                             onClick()
@@ -1667,7 +1736,7 @@ fun RecentVideoCard(
                         leadingIcon = { Icon(if (video.isVideo) Lucide.Play else Lucide.Image, contentDescription = null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Share") },
+                        text = { Text(stringResource(R.string.share)) },
                         onClick = {
                             expandedMenu = false
                             onShare()
@@ -1675,7 +1744,7 @@ fun RecentVideoCard(
                         leadingIcon = { Icon(Lucide.Share2, contentDescription = null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                         onClick = {
                             expandedMenu = false
                             onDelete()
@@ -1856,7 +1925,9 @@ fun OrionSettingsValueItem(
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .widthIn(min = 110.dp)
             ) {
                 Text(
                     text = title,
@@ -1879,12 +1950,14 @@ fun OrionSettingsValueItem(
                 }
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
             Surface(
                 shape = RoundedCornerShape(10.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.padding(vertical = 2.dp)
+                modifier = Modifier
+                    .padding(vertical = 2.dp)
+                    .widthIn(min = 36.dp, max = 140.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1893,16 +1966,20 @@ fun OrionSettingsValueItem(
                 ) {
                     Text(
                         text = value,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 15.sp,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (showChevron) {
                         Icon(
                             imageVector = Lucide.ChevronRight,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
@@ -1954,7 +2031,9 @@ fun OrionSettingsInfoItem(
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .widthIn(min = 110.dp)
             ) {
                 Text(
                     text = title,
@@ -1976,11 +2055,13 @@ fun OrionSettingsInfoItem(
             }
 
             if (badge != null) {
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.padding(vertical = 2.dp)
+                    modifier = Modifier
+                        .padding(vertical = 2.dp)
+                        .widthIn(min = 36.dp, max = 140.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1989,16 +2070,20 @@ fun OrionSettingsInfoItem(
                     ) {
                         Text(
                             text = badge,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 15.sp,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         if (onClick != null) {
                             Icon(
                                 imageVector = Lucide.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(15.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                         }
                     }
@@ -2052,6 +2137,7 @@ fun VideoPlayerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 640.dp),
         title = {
             Text(
                 text = videoName,
@@ -2066,7 +2152,7 @@ fun VideoPlayerDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.Black)
             ) {
@@ -2192,7 +2278,7 @@ fun RecentThumbnailItem(
                     onDismissRequest = { expandedMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text(if (video.isVideo) "Play" else "View") },
+                        text = { Text(if (video.isVideo) stringResource(R.string.trimmer_play) else stringResource(R.string.home_view_all)) },
                         onClick = {
                             expandedMenu = false
                             onClick()
@@ -2200,7 +2286,7 @@ fun RecentThumbnailItem(
                         leadingIcon = { Icon(if (video.isVideo) Lucide.Play else Lucide.Image, contentDescription = null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Share") },
+                        text = { Text(stringResource(R.string.share)) },
                         onClick = {
                             expandedMenu = false
                             VideoHelper.shareVideo(context, video)
@@ -2208,7 +2294,7 @@ fun RecentThumbnailItem(
                         leadingIcon = { Icon(Lucide.Share2, contentDescription = null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                         onClick = {
                             expandedMenu = false
                             onDelete()
@@ -2330,16 +2416,21 @@ fun AdbPairingDialog(
             )
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 22.dp)
-                .padding(bottom = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 640.dp)
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 22.dp)
+                    .padding(bottom = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
                 // Header Row with Title, Status & Close Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2372,7 +2463,7 @@ fun AdbPairingDialog(
                         }
                         Column {
                             Text(
-                                "Stealth Recording Setup",
+                                stringResource(R.string.adb_pairing_dialog_stealth_setup),
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.3).sp,
@@ -2393,9 +2484,9 @@ fun AdbPairingDialog(
                                         )
                                 )
                                 Text(
-                                    if (AdbManager.isConnected) "Status: Connected & Ready"
-                                    else if (isPaired) "Status: Paired (Needs Connect)"
-                                    else "One-time wireless pairing",
+                                    if (AdbManager.isConnected) stringResource(R.string.adb_status_connected_ready)
+                                    else if (isPaired) stringResource(R.string.adb_status_paired_needs_connect)
+                                    else stringResource(R.string.adb_status_onetime_pairing),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = if (AdbManager.isConnected) EmeraldAccent else MaterialTheme.colorScheme.onSurfaceVariant
@@ -2409,7 +2500,7 @@ fun AdbPairingDialog(
                     ) {
                         Icon(
                             imageVector = Lucide.X,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
@@ -2425,7 +2516,10 @@ fun AdbPairingDialog(
                         .padding(3.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    listOf("Quick Notification" to 0, "Manual / Port Entry" to 1).forEach { (label, index) ->
+                    listOf(
+                        stringResource(R.string.adb_tab_quick_notification) to 0,
+                        stringResource(R.string.adb_tab_manual_port) to 1
+                    ).forEach { (label, index) ->
                         val isSelected = selectedTab == index
                         Box(
                             contentAlignment = Alignment.Center,
@@ -2450,7 +2544,7 @@ fun AdbPairingDialog(
                 if (selectedTab == 0) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            "Pair easily using Android's notification reply:",
+                            stringResource(R.string.adb_pair_notification_hint),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -2458,18 +2552,18 @@ fun AdbPairingDialog(
 
                         AdbSetupStep(
                             number = "1",
-                            title = "Launch Wireless Debugging",
-                            text = "Tap 'Start Pairing Helper' below. ScreenX opens Android Developer Options."
+                            title = stringResource(R.string.adb_step1_launch_title),
+                            text = stringResource(R.string.adb_step1_launch_desc)
                         )
                         AdbSetupStep(
                             number = "2",
-                            title = "Tap 'Pair device with pairing code'",
-                            text = "Turn on Wireless Debugging and tap to reveal the 6-digit code."
+                            title = stringResource(R.string.adb_step2_pair_code_title),
+                            text = stringResource(R.string.adb_step2_pair_code_desc)
                         )
                         AdbSetupStep(
                             number = "3",
-                            title = "Reply on ScreenX Notification",
-                            text = "Pull down your notification shade, tap Reply, type the 6-digit code, and send."
+                            title = stringResource(R.string.adb_step3_reply_title),
+                            text = stringResource(R.string.adb_step3_reply_desc)
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -2496,7 +2590,7 @@ fun AdbPairingDialog(
                         ) {
                             Icon(Lucide.Zap, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Start Pairing Helper", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(stringResource(R.string.start_pairing_helper), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
 
                         if (serviceStarted && !isPaired) {
@@ -2513,13 +2607,13 @@ fun AdbPairingDialog(
                                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            "Listening for pairing dialog…",
+                                            stringResource(R.string.listening_pairing_dialog),
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         Text(
-                                            "Tap 'Pair device with pairing code' in Wireless debugging",
+                                            stringResource(R.string.tap_pair_device_code),
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -2530,7 +2624,7 @@ fun AdbPairingDialog(
                                             serviceStarted = false
                                         }
                                     ) {
-                                        Text("Stop", fontSize = 12.sp)
+                                        Text(stringResource(R.string.stop), fontSize = 12.sp)
                                     }
                                 }
                             }
@@ -2554,13 +2648,13 @@ fun AdbPairingDialog(
                                     )
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            "Pairing Complete",
+                                            stringResource(R.string.pairing_complete),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = EmeraldAccent
                                         )
                                         Text(
-                                            "Device is paired and ready for stealth recording.",
+                                            stringResource(R.string.device_paired_stealth),
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -2585,7 +2679,7 @@ fun AdbPairingDialog(
                         ) {
                             Icon(Lucide.Settings, contentDescription = null, modifier = Modifier.size(15.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Open Developer Settings", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text(stringResource(R.string.open_developer_settings), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         }
 
                         // Step 1: Pair
@@ -2599,13 +2693,13 @@ fun AdbPairingDialog(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    "Step 1: Pair with Device",
+                                    stringResource(R.string.adb_manual_step1_title),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    "From Wireless Debugging → 'Pair device with pairing code':\n(Tip: Keep dialog open via Split-Screen so the port stays active)",
+                                    stringResource(R.string.adb_manual_step1_desc),
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = 15.sp
@@ -2614,7 +2708,7 @@ fun AdbPairingDialog(
                                 OutlinedTextField(
                                     value = pairingHost,
                                     onValueChange = { v -> pairingHost = v },
-                                    label = { Text("Device IP Address", fontSize = 11.sp) },
+                                    label = { Text(stringResource(R.string.adb_device_ip_label), fontSize = 11.sp) },
                                     placeholder = { Text(detectedIp, fontSize = 11.sp) },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
@@ -2625,8 +2719,8 @@ fun AdbPairingDialog(
                                     OutlinedTextField(
                                         value = pairingPort,
                                         onValueChange = { v -> pairingPort = v.filter(Char::isDigit).take(5) },
-                                        label = { Text("Pairing Port", fontSize = 11.sp) },
-                                        placeholder = { Text("e.g. 33625", fontSize = 11.sp) },
+                                        label = { Text(stringResource(R.string.adb_pairing_port_label), fontSize = 11.sp) },
+                                        placeholder = { Text(stringResource(R.string.adb_pairing_port_placeholder), fontSize = 11.sp) },
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         modifier = Modifier.weight(1f),
@@ -2635,7 +2729,7 @@ fun AdbPairingDialog(
                                     OutlinedTextField(
                                         value = pairingCode,
                                         onValueChange = { v -> pairingCode = v.filter(Char::isDigit).take(6) },
-                                        label = { Text("6-digit Code", fontSize = 11.sp) },
+                                        label = { Text(stringResource(R.string.adb_pairing_code_label), fontSize = 11.sp) },
                                         placeholder = { Text("009154", fontSize = 11.sp) },
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -2650,10 +2744,10 @@ fun AdbPairingDialog(
                                         successMsg = ""
                                         val port = pairingPort.toIntOrNull()
                                         if (port == null || port !in 1..65535) {
-                                            errorMsg = "Enter a valid 5-digit pairing port"; return@Button
+                                            errorMsg = context.getString(R.string.adb_err_invalid_port); return@Button
                                         }
                                         if (pairingCode.trim().length != 6) {
-                                            errorMsg = "Enter the 6-digit pairing code"; return@Button
+                                            errorMsg = context.getString(R.string.adb_err_invalid_code); return@Button
                                         }
                                         isWorking = true
                                         coroutineScope.launch {
@@ -2665,11 +2759,11 @@ fun AdbPairingDialog(
                                             )
                                             isWorking = false
                                             result.onSuccess {
-                                                successMsg = "Pairing successful! Now connect below."
+                                                successMsg = context.getString(R.string.adb_success_paired_now_connect)
                                                 // Also attempt auto-connect immediately
                                                 AdbManager.connect(context, 0, pairingHost.trim().ifEmpty { null })
                                             }.onFailure {
-                                                errorMsg = it.message ?: "Pairing failed"
+                                                errorMsg = it.message ?: context.getString(R.string.adb_pairing_failed_fmt, "")
                                             }
                                         }
                                     },
@@ -2677,7 +2771,7 @@ fun AdbPairingDialog(
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Pair Device", fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.adb_pairing_btn), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -2693,13 +2787,13 @@ fun AdbPairingDialog(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    "Step 2: Connect to Port",
+                                    stringResource(R.string.adb_manual_step2_title),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    "Main port shown on Wireless Debugging (e.g. 41927) or leave blank for Auto:",
+                                    stringResource(R.string.adb_manual_step2_desc),
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -2707,8 +2801,8 @@ fun AdbPairingDialog(
                                 OutlinedTextField(
                                     value = connectionPort,
                                     onValueChange = { v -> connectionPort = v.filter(Char::isDigit).take(5) },
-                                    label = { Text("Connection Port (Optional)", fontSize = 11.sp) },
-                                    placeholder = { Text("e.g. 41927 or blank for auto", fontSize = 11.sp) },
+                                    label = { Text(stringResource(R.string.adb_connect_port_label), fontSize = 11.sp) },
+                                    placeholder = { Text(stringResource(R.string.adb_port_auto_placeholder), fontSize = 11.sp) },
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth(),
@@ -2729,9 +2823,9 @@ fun AdbPairingDialog(
                                             )
                                             isWorking = false
                                             result.onSuccess {
-                                                successMsg = "Connected! Stealth Recording is ready."
+                                                successMsg = context.getString(R.string.adb_success_connected)
                                             }.onFailure {
-                                                errorMsg = it.message ?: "Connection failed"
+                                                errorMsg = it.message ?: context.getString(R.string.adb_err_connect_failed)
                                             }
                                         }
                                     },
@@ -2739,7 +2833,7 @@ fun AdbPairingDialog(
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text("Connect", fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.adb_connect_btn), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -2786,6 +2880,7 @@ fun AdbPairingDialog(
 
             }
         }
+    }
     }
 
 @Composable
@@ -2855,15 +2950,20 @@ fun AdbLimitationsDialog(
             )
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 20.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 640.dp)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
             // Title Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -2886,13 +2986,13 @@ fun AdbLimitationsDialog(
                 }
                 Column {
                     Text(
-                        text = if (onConfirmEnable != null) "Enable Stealth Recording" else "Stealth Recording",
+                        text = if (onConfirmEnable != null) stringResource(R.string.stealth_enable_title) else stringResource(R.string.home_stealth_title),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = if (onConfirmEnable != null) "Review important details before enabling" else "Features & limitations",
+                        text = if (onConfirmEnable != null) stringResource(R.string.stealth_review_desc) else stringResource(R.string.stealth_features_limitations),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -2925,14 +3025,14 @@ fun AdbLimitationsDialog(
                     )
                     Column {
                         Text(
-                            text = "Fully Undetectable",
+                            text = stringResource(R.string.fully_undetectable),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = undetectableAccent
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Bypasses capture detection in Snapchat, Instagram, and banking apps without triggering alerts.",
+                            text = stringResource(R.string.stealth_rules_bypass),
                             fontSize = 11.sp,
                             color = undetectableBody,
                             lineHeight = 15.sp
@@ -2945,20 +3045,20 @@ fun AdbLimitationsDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AdbLimitationRow(
                     icon = Lucide.VolumeX,
-                    label = "No Audio Capture",
-                    detail = "Stealth Recording captures video only; audio is not supported by Android's internal engine.",
+                    label = stringResource(R.string.adb_rules_audio_title),
+                    detail = stringResource(R.string.adb_rules_audio_desc),
                     isWarning = true
                 )
                 AdbLimitationRow(
                     icon = Lucide.TriangleAlert,
-                    label = "3-Minute Session Limit",
-                    detail = "Android limits screenrecord sessions to 3 minutes. ScreenX automatically restarts in segments.",
+                    label = stringResource(R.string.stealth_rule_3min),
+                    detail = stringResource(R.string.stealth_rule_3min_desc),
                     isWarning = true
                 )
                 AdbLimitationRow(
                     icon = Lucide.Usb,
-                    label = "One-Time Wireless Pairing",
-                    detail = "Requires wireless debugging pairing once on Android 11+.",
+                    label = stringResource(R.string.stealth_rule_wireless),
+                    detail = stringResource(R.string.stealth_rule_wireless_desc),
                     isWarning = false
                 )
             }
@@ -2974,7 +3074,7 @@ fun AdbLimitationsDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Cancel", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.cancel), fontWeight = FontWeight.SemiBold)
                     }
                     Button(
                         onClick = onConfirmEnable,
@@ -2985,7 +3085,7 @@ fun AdbLimitationsDialog(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text("Enable", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.enable), fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
@@ -2998,11 +3098,12 @@ fun AdbLimitationsDialog(
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
-                    Text("Got it", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.got_it), fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
+}
 }
 
 @Composable
@@ -3065,6 +3166,7 @@ fun OptionSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 440.dp),
         title = {
             Text(
                 text = title,
@@ -3077,7 +3179,9 @@ fun OptionSelectionDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
             ) {
                 options.forEach { option ->
                     val isSelected = option == selectedOption
@@ -3162,7 +3266,7 @@ fun OptionSelectionDialog(
                 )
             ) {
                 Text(
-                    "Cancel",
+                    stringResource(R.string.cancel),
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.labelLarge
                 )
