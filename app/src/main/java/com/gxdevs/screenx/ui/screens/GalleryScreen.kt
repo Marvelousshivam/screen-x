@@ -55,6 +55,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.gxdevs.screenx.utils.RecordedVideo
 import com.gxdevs.screenx.utils.VideoHelper
+import com.gxdevs.screenx.ui.components.VideoPreviewBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -273,12 +274,23 @@ fun GalleryScreen(
         }
     }
 
-    // Video Player Dialog
+    // Video Player Bottom Sheet
     selectedVideoForPlayback?.let { video ->
-        VideoPlayerDialog(
-            videoUri = video.uri,
-            videoName = video.name,
-            onDismiss = { selectedVideoForPlayback = null }
+        VideoPreviewBottomSheet(
+            video = video,
+            onDismiss = { selectedVideoForPlayback = null },
+            onShare = { VideoHelper.shareVideo(context, video) },
+            onTrim = {
+                selectedVideoForPlayback = null
+                onTrimVideoClick(video)
+            },
+            onRename = { _ ->
+                onRefresh()
+            },
+            onDelete = {
+                selectedVideoForPlayback = null
+                mediaToDelete = video
+            }
         )
     }
 
@@ -428,11 +440,7 @@ fun GalleryGridItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val cleanTitle = if (item.isVideo) {
-                    item.name.substringAfterLast("ScreenX_").substringBefore(".mp4")
-                } else {
-                    item.name.substringAfterLast("ScreenX_Screenshot_").substringBefore(".png")
-                }
+                val cleanTitle = VideoHelper.getHumanizedTitle(item)
 
                 Text(
                     text = cleanTitle,
@@ -601,7 +609,7 @@ fun GalleryListItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = item.name,
+                    text = VideoHelper.getHumanizedTitle(item),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = 15.sp,
@@ -609,10 +617,8 @@ fun GalleryListItem(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                val dateStr = VideoHelper.formatDate(item.dateAdded)
-                val sizeStr = VideoHelper.formatSize(item.size)
                 Text(
-                    text = "$dateStr • $sizeStr",
+                    text = VideoHelper.getHumanizedSubtitle(item),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

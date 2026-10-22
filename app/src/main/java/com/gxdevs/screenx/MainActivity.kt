@@ -304,8 +304,8 @@ class MainActivity : ComponentActivity() {
                                         settingsManager = settingsManager,
                                         onScreenshotClick = { triggerScreenshot() },
                                         onViewAllClick = { currentScreen = ScreenState.GALLERY },
-                                        onTrimVideoClick = {
-                                            selectedVideoForTrimming = null
+                                        onTrimVideoClick = { video ->
+                                            selectedVideoForTrimming = video
                                             currentScreen = ScreenState.TRIMMER
                                         },
                                         onSettingsClick = { currentScreen = ScreenState.SETTINGS }

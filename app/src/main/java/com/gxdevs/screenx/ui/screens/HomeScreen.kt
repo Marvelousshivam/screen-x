@@ -48,6 +48,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Camera
+import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.CircleDot
 import com.composables.icons.lucide.CirclePlay
@@ -86,6 +87,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -100,6 +102,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.gxdevs.screenx.ui.components.VideoPreviewBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -236,7 +239,7 @@ fun HomeScreen(
     settingsManager: SettingsManager,
     onScreenshotClick: () -> Unit,
     onViewAllClick: () -> Unit,
-    onTrimVideoClick: () -> Unit,
+    onTrimVideoClick: (RecordedVideo?) -> Unit = {},
     onSettingsClick: () -> Unit,
     onRefresh: () -> Unit = {}
 ) {
@@ -323,6 +326,14 @@ fun HomeScreen(
             (stat.blockSizeLong * stat.availableBlocksLong) / (1024 * 1024 * 1024)
         } catch (_: Exception) {
             42L
+        }
+    }
+    val totalSpaceGB = remember {
+        try {
+            val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
+            (stat.blockSizeLong * stat.blockCountLong) / (1024 * 1024 * 1024)
+        } catch (_: Exception) {
+            128L
         }
     }
     val usedPercent = remember {
@@ -857,12 +868,22 @@ fun HomeScreen(
                                         fontWeight = FontWeight.Bold,
                                         lineHeight = 18.sp
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    LinearProgressIndicator(
+                                        progress = { (usedPercent / 100f).coerceIn(0f, 1f) },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(4.dp)
+                                            .clip(RoundedCornerShape(2.dp)),
+                                        color = if (freeSpaceGB < 2) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(3.dp))
                                     Text(
-                                        text = stringResource(R.string.available_space),
+                                        text = "$freeSpaceGB GB free of $totalSpaceGB GB",
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 11.sp,
-                                        lineHeight = 14.sp,
+                                        fontSize = 10.sp,
+                                        lineHeight = 13.sp,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -881,6 +902,7 @@ fun HomeScreen(
                                 .fillMaxWidth()
                                 .bouncyClickable { showAudioDialog = true }
                         ) {
+                            val isAudioActive = audioSource != "None"
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -892,8 +914,16 @@ fun HomeScreen(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
+                                        .background(
+                                            if (isAudioActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f)
+                                            else MaterialTheme.colorScheme.surfaceVariant
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isAudioActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                                            CircleShape
+                                        )
                                 ) {
                                     Icon(
                                         imageVector = when (audioSource) {
@@ -902,7 +932,7 @@ fun HomeScreen(
                                             else -> Lucide.Mic
                                         },
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        tint = if (isAudioActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(17.dp)
                                     )
                                 }
@@ -911,7 +941,7 @@ fun HomeScreen(
                                     Text(
                                         text = when (audioSource) {
                                             "System" -> stringResource(R.string.audio_display_system)
-                                            "MicSystem" -> stringResource(R.string.audio_display_dual)
+                                            "MicSystem" -> "Mic + System"
                                             "None" -> stringResource(R.string.audio_display_muted)
                                             else -> stringResource(R.string.audio_display_mic)
                                         },
@@ -924,7 +954,13 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = if (audioSource == "MicSystem" && voicePriority) stringResource(R.string.setting_voice_priority_title) else stringResource(R.string.setting_audio_input_title),
+                                        text = if (audioSource == "None") {
+                                            stringResource(R.string.audio_display_muted)
+                                        } else if (audioSource == "MicSystem" && voicePriority) {
+                                            stringResource(R.string.setting_voice_priority_title)
+                                        } else {
+                                            stringResource(R.string.setting_audio_input_title)
+                                        },
                                         color = if (audioSource == "MicSystem" && voicePriority) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         lineHeight = 14.sp,
@@ -968,19 +1004,31 @@ fun HomeScreen(
                                 .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Lucide.Video,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                }
                                 Icon(
-                                    imageVector = Lucide.Video,
+                                    imageVector = Lucide.ChevronDown,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(17.dp)
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                             Column {
@@ -1029,23 +1077,35 @@ fun HomeScreen(
                                 .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 12.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = when (orientation) {
+                                            "Auto" -> Lucide.RotateCcw
+                                            "Portrait" -> Lucide.Smartphone
+                                            else -> Lucide.Tablet
+                                        },
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                }
                                 Icon(
-                                    imageVector = when (orientation) {
-                                        "Auto" -> Lucide.RotateCcw
-                                        "Portrait" -> Lucide.Smartphone
-                                        else -> Lucide.Tablet
-                                    },
+                                    imageVector = Lucide.ChevronDown,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(17.dp)
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                             Column {
@@ -1227,42 +1287,12 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.library_title),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        IconButton(
-                            onClick = {
-                                if (isSaving) {
-                                    Toast.makeText(context, context.getString(R.string.home_toast_finalizing), Toast.LENGTH_SHORT).show()
-                                } else {
-                                    isRefreshing = true
-                                    onRefresh()
-                                    coroutineScope.launch {
-                                        kotlinx.coroutines.delay(650)
-                                        isRefreshing = false
-                                        Toast.makeText(context, context.getString(R.string.home_toast_refreshed_fmt, videos.size), Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Lucide.RotateCcw,
-                                contentDescription = stringResource(R.string.refresh),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .graphicsLayer { rotationZ = refreshRotation }
-                            )
-                        }
-                    }
+                    Text(
+                        text = stringResource(R.string.library_title),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                     if (videos.isNotEmpty()) {
                         Text(
                             text = stringResource(R.string.home_view_all),
@@ -1427,7 +1457,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .height(78.dp)
                         .bouncyClickable {
-                            onTrimVideoClick()
+                            onTrimVideoClick(null)
                         }
                 ) {
                     Row(
@@ -1536,12 +1566,23 @@ fun HomeScreen(
         )
     }
 
-    // Playback Dialog
+    // Playback Bottom Sheet (Full-height / Native Aspect Ratio Video Preview)
     selectedVideoForPlayback?.let { video ->
-        VideoPlayerDialog(
-            videoUri = video.uri,
-            videoName = video.name,
-            onDismiss = { selectedVideoForPlayback = null }
+        VideoPreviewBottomSheet(
+            video = video,
+            onDismiss = { selectedVideoForPlayback = null },
+            onShare = { VideoHelper.shareVideo(context, video) },
+            onTrim = {
+                selectedVideoForPlayback = null
+                onTrimVideoClick(video)
+            },
+            onRename = { _ ->
+                onRefresh()
+            },
+            onDelete = {
+                selectedVideoForPlayback = null
+                mediaToDelete = video
+            }
         )
     }
 
@@ -1695,7 +1736,7 @@ fun RecentVideoCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    video.name,
+                    text = VideoHelper.getHumanizedTitle(video),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = 15.sp,
@@ -1703,10 +1744,8 @@ fun RecentVideoCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                val dateStr = VideoHelper.formatDate(video.dateAdded)
-                val sizeStr = VideoHelper.formatSize(video.size)
                 Text(
-                    text = "$dateStr • $sizeStr",
+                    text = VideoHelper.getHumanizedSubtitle(video),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -2119,69 +2158,30 @@ fun VideoPlayerDialog(
     videoName: String,
     onDismiss: () -> Unit
 ) {
+    // Legacy fallback forwarder to the upgraded VideoPreviewBottomSheet
     val context = LocalContext.current
-    
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(videoUri))
-            prepare()
-            playWhenReady = true
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer.release()
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        modifier = Modifier.widthIn(max = 640.dp),
-        title = {
-            Text(
-                text = videoName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+    VideoPreviewBottomSheet(
+        video = RecordedVideo(
+            id = 0L,
+            uri = videoUri,
+            name = videoName,
+            path = "",
+            size = 0L,
+            duration = 0L,
+            dateAdded = System.currentTimeMillis() / 1000L,
+            resolution = "1080p",
+            isVideo = true
+        ),
+        onDismiss = onDismiss,
+        onShare = {
+            VideoHelper.shareVideo(
+                context,
+                RecordedVideo(0L, videoUri, videoName, "", 0L, 0L, 0L, "1080p", true)
             )
         },
-        text = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black)
-            ) {
-                AndroidView(
-                    factory = { ctx ->
-                        PlayerView(ctx).apply {
-                            player = exoPlayer
-                            useController = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text(
-                    "Close",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
+        onTrim = onDismiss,
+        onRename = {},
+        onDelete = onDismiss
     )
 }
 
@@ -2200,12 +2200,12 @@ fun RecentThumbnailItem(
     }
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         modifier = Modifier
-            .width(140.dp)
-            .height(100.dp)
+            .width(110.dp)
+            .height(175.dp)
             .bouncyClickable { onClick() }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -2232,13 +2232,14 @@ fun RecentThumbnailItem(
                 }
             }
 
-            // Duration badge at bottom-start
+            // Single pill badge at bottom-start
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(6.dp)
-                    .background(Color(0xCC000000), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xCC000000))
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
             ) {
                 if (video.isVideo) {
                     Text(
@@ -2257,21 +2258,30 @@ fun RecentThumbnailItem(
                 }
             }
 
-            // Options menu button at top-end
+            // Options menu button at top-end with subtle frosted backing
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .padding(6.dp)
             ) {
-                IconButton(
-                    onClick = { expandedMenu = true },
-                    modifier = Modifier.size(32.dp)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.45f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Lucide.EllipsisVertical,
-                        contentDescription = "Options",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    IconButton(
+                        onClick = { expandedMenu = true },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Lucide.EllipsisVertical,
+                            contentDescription = "Options",
+                            tint = Color.White,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
                 }
                 DropdownMenu(
                     expanded = expandedMenu,
@@ -2302,23 +2312,6 @@ fun RecentThumbnailItem(
                         leadingIcon = { Icon(Lucide.Trash2, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
                     )
                 }
-            }
-
-            // Minimal text gradient or shadow at bottom for name
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
-                    .background(Color(0x99000000), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = video.name.substringAfterLast("ScreenX_").substringBefore(".mp4").take(8) + "...",
-                    color = Color.White,
-                    fontSize = 9.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
         }
     }
