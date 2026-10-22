@@ -25,7 +25,12 @@
     <a href="https://github.com/gtxprime/screen-x/releases/latest">
       <img src="https://img.shields.io/github/downloads/gtxprime/screen-x/total?label=Downloads&logo=github&style=for-the-badge&color=21262d&logoColor=white" alt="GitHub Downloads" />
     </a>
-    [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/gtxPrime/badge.svg)](https://hub.xerj.org/contributors/gtxPrime)
+    <a href="https://hub.xerj.org/contributors/gtxPrime">
+  <img
+    src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhub.xerj.org%2Fcontributors%2FgtxPrime%2Fbadge.json&style=for-the-badge"
+    alt="XERJ Corpus Hub Contributor"
+  />
+</a>
   </p>
 
   <a href="https://github.com/gtxprime/screen-x/releases/latest">
